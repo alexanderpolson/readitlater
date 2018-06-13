@@ -63,16 +63,7 @@ public class OAuth {
 
 
     public AuthToken getAccessToken(@NonNull final String username, @NonNull final String password) throws IOException {
-        // TODO: Is signature created based on a combination of the auth parameters and post body parameters?
-        // TODO: What is the format of the post body parameters? Just a query string?
         // TODO: This should be  written flexibly so as to cover other OAuth scenarios (parameters in query string, etc)
-
-        // Request parameters
-        Map<String, String> requestParameters = new HashMap<>();
-        MapBuilder<String, String> requestBuilder = new MapBuilder(requestParameters);
-        requestBuilder.put(X_AUTH_USERNAME, username)
-                .put(X_AUTH_PASSWORD, password)
-                .put(X_AUTH_MODE, X_AUTH_MODE_VALUE);
 
         // Authorization Header
         Map<String, String> authHeaderParameters = new HashMap<>();
