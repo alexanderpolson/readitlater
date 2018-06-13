@@ -64,28 +64,33 @@ public class OAuth {
 
     public AuthToken getAccessToken(@NonNull final String username, @NonNull final String password) throws IOException {
         // TODO: This should be  written flexibly so as to cover other OAuth scenarios (parameters in query string, etc)
-
-        // Authorization Header
-        Map<String, String> authHeaderParameters = new HashMap<>();
-        MapBuilder<String, String> authHeaderBuilder = new MapBuilder(authHeaderParameters);
-        authHeaderBuilder.put(O_AUTH_CONSUMER_KEY_KEY, consumerKey)
-                .put(O_AUTH_VERSION_KEY, O_AUTH_VERSION)
-                .put(O_AUTH_SIGNATURE_METHOD_KEY, HMACSHA1SignatureType)
-                .put(O_AUTH_TIMESTAMP_KEY, generateTimeStamp())
-                .put(O_AUTH_NONCE_KEY, generateNonce());
-
         Map<String, String> bodyParameters = new HashMap<>();
         MapBuilder<String, String> bodyBuilder = new MapBuilder(bodyParameters);
         bodyBuilder.put(X_AUTH_USERNAME, username)
                 .put(X_AUTH_PASSWORD, password)
                 .put(X_AUTH_MODE, X_AUTH_MODE_VALUE);
 
-        // TODO: Remove this hard coding.
-        String url = baseApiUrl + "/oauth/access_token";
+        String responseBody = makeRequest(Optional.empty(), "/oauth/access_token", bodyParameters);
+        Map<String, String> responseParams = QueryStringBuilder.toParameters(responseBody);
+        return AuthToken.builder().tokenKey(responseParams.get(O_AUTH_TOKEN_KEY)).tokenSecret(responseParams.get(O_AUTH_TOKEN_SECRET_KEY)).build();
+    }
+
+    public String makeRequest(@NonNull Optional<AuthToken> authToken, String requestUri, Map<String, String> parameters) throws IOException {
+        // Authorization Header
+        Map<String, String> authHeaderParameters = new HashMap<>();
+        MapBuilder<String, String> authHeaderBuilder = new MapBuilder(authHeaderParameters);
+        authHeaderBuilder.put(O_AUTH_CONSUMER_KEY_KEY, consumerKey)
+                .put(O_AUTH_TOKEN_KEY, authToken.map(t -> t.getTokenKey()).orElse(""))
+                .put(O_AUTH_VERSION_KEY, O_AUTH_VERSION)
+                .put(O_AUTH_SIGNATURE_METHOD_KEY, HMACSHA1SignatureType)
+                .put(O_AUTH_TIMESTAMP_KEY, generateTimeStamp())
+                .put(O_AUTH_NONCE_KEY, generateNonce());
+
+        String url = baseApiUrl + requestUri;
         System.err.printf("URL: %s\n", url);
-        String signatureBase = generateSignatureBase(url, authHeaderParameters, bodyParameters);
+        String signatureBase = generateSignatureBase(url, authHeaderParameters, parameters);
         System.err.printf("Signature Base: %s\n", signatureBase);
-        String signature = generateSignature(signatureBase);
+        String signature = generateSignature(signatureBase, authToken);
         System.err.printf("Signature: %s\n", signature);
         authHeaderBuilder.put(O_AUTH_SIGNATURE_KEY, signature);
 
@@ -95,7 +100,7 @@ public class OAuth {
         String headerParameters = generateAuthHeaderParams(authHeaderParameters);
 
         // Create the post body
-        QueryStringBuilder postDataBuilder = new QueryStringBuilder().addParameters(bodyParameters);
+        QueryStringBuilder postDataBuilder = new QueryStringBuilder().addParameters(parameters);
         request.setHeader(HEADER_AUTH, String.format(HEADER_AUTH_VALUE_FORMAT, headerParameters));
 
         StringEntity postData = new StringEntity(postDataBuilder.build());
@@ -105,8 +110,7 @@ public class OAuth {
         try {
             System.out.println(response.getStatusLine().getStatusCode());
             System.out.println(response.getStatusLine().getReasonPhrase());
-            Map<String, String> responseParams = QueryStringBuilder.toParameters(EntityUtils.toString(response.getEntity()));
-            return AuthToken.builder().tokenKey(responseParams.get(O_AUTH_TOKEN_KEY)).tokenSecret(responseParams.get(O_AUTH_TOKEN_SECRET_KEY)).build();
+            return EntityUtils.toString(response.getEntity());
         } finally {
             response.close();
         }
@@ -133,8 +137,8 @@ public class OAuth {
         return String.format("%s&%s&%s", REQUEST_METHOD, URLEncoder.encode(url, StandardCharsets.UTF_8), URLEncoder.encode(normalizedRequestParameters, StandardCharsets.UTF_8));
     }
 
-    private String generateSignature(String message) throws UnsupportedEncodingException {
-        String key = String.format("%s&", consumerSecret); // No token secret just yet.
+    private String generateSignature(String message, Optional<AuthToken> authToken) throws UnsupportedEncodingException {
+        String key = String.format("%s&%s", consumerSecret, authToken.map(t -> t.getTokenSecret()).orElse(""));
         HMac encoder = new HMac(new SHA1Digest());
         encoder.init(new KeyParameter(key.getBytes(StandardCharsets.UTF_8)));
         byte[] msgBytes = message.getBytes(StandardCharsets.UTF_8);
