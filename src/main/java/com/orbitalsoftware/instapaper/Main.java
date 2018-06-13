@@ -25,8 +25,8 @@ public class Main {
     }
 
     private void run() throws Exception {
-        AuthToken authToken = getAuthToken(AUTH_TOKEN_PROPERTIES_PATH);
-        System.out.println(getAuthToken());
+        AuthToken authToken = getAuthToken(AUTH_TOKEN_PROPERTIES_PATH)
+        System.out.println(authToken);
     }
 
     private void writeAuthTokenProvider(AuthToken authToken, String fileName) {
