@@ -1,10 +1,10 @@
 package com.orbitalsoftware.instapaper;
 
+import com.orbitalsoftware.oauth.AuthToken;
+import com.orbitalsoftware.oauth.OAuth;
 import lombok.NonNull;
 
-import java.net.URI;
-
-public class Instapaper { //extends DefaultApi10a {
+public class Instapaper {
 
     private static final String HMACSHA1SignatureType = "HMAC-SHA1";
 
@@ -14,11 +14,11 @@ public class Instapaper { //extends DefaultApi10a {
     private final OAuth oAuth;
 
     public Instapaper(@NonNull final String consumerKey, @NonNull final String consumerSecret) throws Exception {
-        this.oAuth = new OAuth(consumerKey, consumerSecret);
+        this.oAuth = new OAuth(BASE_API_URL, consumerKey, consumerSecret);
     }
 
     // TODO: Use more specific exceptions.
-    public String getAuthToken(@NonNull String username, @NonNull String password) throws Exception {
+    public AuthToken getAuthToken(@NonNull String username, @NonNull String password) throws Exception {
         return oAuth.getAccessToken(username, password);
     }
 }

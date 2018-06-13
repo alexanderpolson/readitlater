@@ -1,5 +1,6 @@
-package com.orbitalsoftware.instapaper;
+package com.orbitalsoftware.oauth;
 
+import com.orbitalsoftware.util.QueryStringBuilder;
 import com.orbitalsoftware.util.MapBuilder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class OAuth {
     private static final String O_AUTH_TIMESTAMP_KEY = O_AUTH_PARAMETER_PREFIX + "timestamp";
     private static final String O_AUTH_NONCE_KEY = O_AUTH_PARAMETER_PREFIX + "nonce";
     private static final String O_AUTH_TOKEN_KEY = O_AUTH_PARAMETER_PREFIX + "token";
-    private static final String O_AUTH_TOKEN_SECRET_KEY = "O_AUTH_PARAMETER_PREFIX + \"token_secret";
+    private static final String O_AUTH_TOKEN_SECRET_KEY = O_AUTH_PARAMETER_PREFIX + "token_secret";
     private static final String O_AUTH_VERIFIER = O_AUTH_PARAMETER_PREFIX + "verifier";
 
     private static final String HEADER_AUTH = "Authorization";
@@ -56,11 +57,12 @@ public class OAuth {
     private static final String POST_PARAMETERS_CONTENT_TYPE = "application/x-www-form-urlencoded";
 
     private final Random random = new Random();
+    private final String baseApiUrl;
     private final String consumerKey;
     private final String consumerSecret;
 
 
-    public String getAccessToken(@NonNull final String username, @NonNull final String password) throws IOException {
+    public AuthToken getAccessToken(@NonNull final String username, @NonNull final String password) throws IOException {
         // TODO: Is signature created based on a combination of the auth parameters and post body parameters?
         // TODO: What is the format of the post body parameters? Just a query string?
         // TODO: This should be  written flexibly so as to cover other OAuth scenarios (parameters in query string, etc)
@@ -88,7 +90,8 @@ public class OAuth {
                 .put(X_AUTH_MODE, X_AUTH_MODE_VALUE);
 
         // TODO: Remove this hard coding.
-        String url = "https://www.instapaper.com/api/1/oauth/access_token";
+        String url = baseApiUrl + "/oauth/access_token";
+        System.err.printf("URL: %s\n", url);
         String signatureBase = generateSignatureBase(url, authHeaderParameters, bodyParameters);
         System.err.printf("Signature Base: %s\n", signatureBase);
         String signature = generateSignature(signatureBase);
@@ -111,12 +114,11 @@ public class OAuth {
         try {
             System.out.println(response.getStatusLine().getStatusCode());
             System.out.println(response.getStatusLine().getReasonPhrase());
-            System.out.println(EntityUtils.toString(response.getEntity()));
+            Map<String, String> responseParams = QueryStringBuilder.toParameters(EntityUtils.toString(response.getEntity()));
+            return AuthToken.builder().tokenKey(responseParams.get(O_AUTH_TOKEN_KEY)).tokenSecret(responseParams.get(O_AUTH_TOKEN_SECRET_KEY)).build();
         } finally {
             response.close();
         }
-
-        return null;
     }
 
     private String generateAuthHeaderParams(Map<String, String> authHeaderParameters) {
@@ -137,7 +139,6 @@ public class OAuth {
         QueryStringBuilder qsBuilder = new QueryStringBuilder().addParameters(allParameters);
         String normalizedRequestParameters = qsBuilder.build();
         System.err.printf("Normalized Parameters: %s\n", normalizedRequestParameters);
-        // TODO: There may be extra encoding to do here.
         return String.format("%s&%s&%s", REQUEST_METHOD, URLEncoder.encode(url, StandardCharsets.UTF_8), URLEncoder.encode(normalizedRequestParameters, StandardCharsets.UTF_8));
     }
 

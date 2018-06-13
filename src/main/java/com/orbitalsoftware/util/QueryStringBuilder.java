@@ -1,4 +1,4 @@
-package com.orbitalsoftware.instapaper;
+package com.orbitalsoftware.util;
 
 import lombok.NonNull;
 
@@ -8,16 +8,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class QueryStringBuilder {
 
     private static final String KEY_VALUE_DELIMITER = "=";
     public static final String PARAMETER_DELIMITER = "&";
 
+    private static final int INDEX_KEY = 0;
+    private static final int INDEX_VALUE = 1;
+
     private Map<String, String> parameters;
 
     public QueryStringBuilder() {
-        // TODO: The parameter sorting is intended to accommodate Oauth but shouldn't really be handled here.
         parameters = new TreeMap<String, String>();
     }
 
@@ -39,12 +42,15 @@ public class QueryStringBuilder {
                 .collect(Collectors.joining(PARAMETER_DELIMITER));
     }
 
-    public static final void main(String[] args) {
-        QueryStringBuilder builder = new QueryStringBuilder()
-                .addParameter("parameter 1", "value1")
-                .addParameter("parameter & 2", "value2");
-
-        System.out.printf("Query String: %s\n", builder.build());
-        System.exit(0);
+    public static Map<String, String> toParameters(String queryString) {
+        Map<String, String> parameters = new HashMap<>();
+        Stream.of(queryString.split(PARAMETER_DELIMITER)).forEach(paramAndValue -> {
+            String[] parts = paramAndValue.split(KEY_VALUE_DELIMITER);
+            // TODO: Need to decode?
+            String key = parts[INDEX_KEY];
+            String value = parts[INDEX_VALUE];
+            parameters.put(key, value);
+        });
+        return parameters;
     }
 }
