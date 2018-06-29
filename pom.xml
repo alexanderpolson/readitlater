@@ -42,9 +42,14 @@
             <artifactId>httpclient</artifactId>
             <version>4.5.5</version>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.9.5</version>
+        </dependency>
 
         <!--
-            For Instapaper functionality
+            For InstapaperService functionality
             TODO: This should be broken out into its own package.
         -->
         <dependency>

@@ -14,6 +14,7 @@ import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 
+import javax.swing.text.html.Option;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -21,6 +22,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Limited implementation of <a href="https://oauth.net/core/1.0a/"≥OAuth 1.0</a> intended to work with APIs that use
+ * XAuth.
+ *
+ * TODO: Expand this to work with non-XAuth services.
+ * TODO: Expand to work with OAuth 2.0
+ * TODO: Allow different request methods (GET vs POST, Auth header, vs body, etc).
+ */
 @RequiredArgsConstructor
 public class OAuth {
 
@@ -58,6 +67,7 @@ public class OAuth {
 
     private final Random random = new Random();
     private final String baseApiUrl;
+    private final String authApiUri;
     private final String consumerKey;
     private final String consumerSecret;
 
@@ -70,12 +80,16 @@ public class OAuth {
                 .put(X_AUTH_PASSWORD, password)
                 .put(X_AUTH_MODE, X_AUTH_MODE_VALUE);
 
-        String responseBody = makeRequest(Optional.empty(), "/oauth/access_token", bodyParameters);
+        String responseBody = makeRequest(Optional.empty(), authApiUri, Optional.of(bodyParameters));
         Map<String, String> responseParams = QueryStringBuilder.toParameters(responseBody);
         return AuthToken.builder().tokenKey(responseParams.get(O_AUTH_TOKEN_KEY)).tokenSecret(responseParams.get(O_AUTH_TOKEN_SECRET_KEY)).build();
     }
 
-    public String makeRequest(@NonNull Optional<AuthToken> authToken, String requestUri, Map<String, String> parameters) throws IOException {
+    public String makeRequest(@NonNull Optional<AuthToken> authToken, String requestUri) throws IOException {
+        return makeRequest(authToken, requestUri, Optional.empty());
+    }
+
+    public String makeRequest(@NonNull Optional<AuthToken> authToken, String requestUri, @NonNull Optional<Map<String, String>> parameters) throws IOException {
         // Authorization Header
         Map<String, String> authHeaderParameters = new HashMap<>();
         MapBuilder<String, String> authHeaderBuilder = new MapBuilder(authHeaderParameters);
@@ -98,14 +112,16 @@ public class OAuth {
         HttpPost request = new HttpPost(url);
         // Add the authorization header.
         String headerParameters = generateAuthHeaderParams(authHeaderParameters);
-
-        // Create the post body
-        QueryStringBuilder postDataBuilder = new QueryStringBuilder().addParameters(parameters);
         request.setHeader(HEADER_AUTH, String.format(HEADER_AUTH_VALUE_FORMAT, headerParameters));
 
-        StringEntity postData = new StringEntity(postDataBuilder.build());
-        postData.setContentType(POST_PARAMETERS_CONTENT_TYPE);
-        request.setEntity(postData);
+        // Create the post body
+        if (parameters.isPresent()) {
+            QueryStringBuilder postDataBuilder = new QueryStringBuilder().addParameters(parameters.get());
+            StringEntity postData = new StringEntity(postDataBuilder.build());
+            postData.setContentType(POST_PARAMETERS_CONTENT_TYPE);
+            request.setEntity(postData);
+        }
+
         CloseableHttpResponse response = httpclient.execute(request);
         try {
             System.out.println(response.getStatusLine().getStatusCode());
@@ -128,9 +144,9 @@ public class OAuth {
         return Long.toString(System.currentTimeMillis() / 1000);
     }
 
-    private String generateSignatureBase(String url, Map<String, String> authHeaderParameters, Map<String, String> requestParameters) {
+    private String generateSignatureBase(String url, Map<String, String> authHeaderParameters, Optional<Map<String, String>> requestParameters) {
         Map<String, String> allParameters = new TreeMap<>(authHeaderParameters);
-        allParameters.putAll(requestParameters);
+        requestParameters.ifPresent(rp -> allParameters.putAll(rp));
         QueryStringBuilder qsBuilder = new QueryStringBuilder().addParameters(allParameters);
         String normalizedRequestParameters = qsBuilder.build();
         System.err.printf("Normalized Parameters: %s\n", normalizedRequestParameters);

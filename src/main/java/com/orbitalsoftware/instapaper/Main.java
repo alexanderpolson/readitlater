@@ -1,9 +1,15 @@
 package com.orbitalsoftware.instapaper;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orbitalsoftware.oauth.*;
 
 import java.io.*;
+import java.util.InputMismatchException;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -18,15 +24,33 @@ public class Main {
     private static final String TOKEN_KEY = "tokenKey";
     private static final String TOKEN_SECRET = "tokenSecret";
 
-    private final Instapaper instapaper;
+    private final InstapaperService instapaperService;
 
     public Main() throws Exception {
-        instapaper = new Instapaper(O_AUTH_CONSUMER_TOKEN, O_AUTH_CONSUMER_SECRET);
+        instapaperService = new InstapaperService(O_AUTH_CONSUMER_TOKEN, O_AUTH_CONSUMER_SECRET);
     }
 
     private void run() throws Exception {
+        getBookmarks();
+//        bookmarkParsing();
+    }
+
+    private void bookmarkParsing() throws Exception {
+        List<Map<String, Object>> results = null;
+        try (InputStream bookmarksJson = this.getClass().getClassLoader().getResourceAsStream("bookmarks.list.json")) {
+            ObjectMapper mapper = new ObjectMapper();
+            results = mapper.readValue(bookmarksJson, new TypeReference<List<Map<String, Object>>>() {});
+        }
+
+        System.out.println(results);
+    }
+
+    private void getBookmarks() throws Exception {
         AuthToken authToken = getAuthToken(AUTH_TOKEN_PROPERTIES_PATH);
-        System.out.println(authToken);
+        BookmarksListRequest request = BookmarksListRequest.builder()
+                .authToken(authToken)
+                .build();
+        System.err.println(instapaperService.getBookmarks(request));
     }
 
     private void writeAuthTokenProvider(AuthToken authToken, String fileName) {
@@ -34,7 +58,7 @@ public class Main {
             Properties authTokenProperties = new Properties();
             authTokenProperties.put(TOKEN_KEY, authToken.getTokenKey());
             authTokenProperties.put(TOKEN_SECRET, authToken.getTokenSecret());
-            authTokenProperties.store(new FileOutputStream(AUTH_TOKEN_PROPERTIES_PATH), "Auth tokens for Instapaper API access");
+            authTokenProperties.store(new FileOutputStream(AUTH_TOKEN_PROPERTIES_PATH), "Auth tokens for InstapaperService API access");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -63,7 +87,7 @@ public class Main {
     }
 
     private AuthToken getAndWriteToken(String fileName) throws Exception {
-        AuthToken authToken = instapaper.getAuthToken(username, password);
+        AuthToken authToken = instapaperService.getAuthToken(username, password);
         writeAuthTokenProvider(authToken, fileName);
         return authToken;
     }
