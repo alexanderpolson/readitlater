@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.Map;
 
 @RequiredArgsConstructor
-class ResponseElementHelper {
+class ResponseElement {
 
     private static final String KEY_ELEMENT_TYPE = "type";
 
