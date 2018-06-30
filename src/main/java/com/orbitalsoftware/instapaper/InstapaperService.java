@@ -16,15 +16,15 @@ import java.util.stream.Stream;
 public class InstapaperService {
 
     private static final String HMACSHA1SignatureType = "HMAC-SHA1";
-    private static final String BASE_API_URL = "https://www.instapaper.com/api/1";
+    private static final String BASE_API_URL = "https://www.instapaper.com/api";
 
-    private static final String AUTHORIZATION_URI = "/oauth/access_token";
-    private static final String BOOKMARKS_LIST_URI = "/bookmarks/list";
-    private static final String ARCHIVE_URI = "/bookmarks/archive";
-    private static final String UNARCHIVE_URI = "/bookmarks/unarchive";
-    private static final String DELETE_URI = "/bookmarks/delete";
-    private static final String STAR_URI = "/bookmarks/star";
-    private static final String UNSTAR_URI = "/bookmarks/unstar";
+    private static final String AUTHORIZATION_URI = "/1/oauth/access_token";
+    private static final String BOOKMARKS_LIST_URI = "/1/bookmarks/list";
+    private static final String ARCHIVE_URI = "/1/bookmarks/archive";
+    private static final String UNARCHIVE_URI = "/1/bookmarks/unarchive";
+    private static final String DELETE_URI = "/1/bookmarks/delete";
+    private static final String STAR_URI = "/1/bookmarks/star";
+    private static final String UNSTAR_URI = "/1/bookmarks/unstar";
 
     private static final String KEY_ELEMENT_TYPE = "type";
 
