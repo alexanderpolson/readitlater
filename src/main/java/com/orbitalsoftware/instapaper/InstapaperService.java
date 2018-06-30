@@ -20,6 +20,7 @@ public class InstapaperService {
     private static final String BASE_API_URL = "https://www.instapaper.com/api/1.1";
 
     private static final String AUTHORIZATION_URI = "/oauth/access_token";
+    private static final String VERIFY_CREDENTIALS = "/account/verify_credentials";
     private static final String BOOKMARKS_LIST_URI = "/bookmarks/list";
     private static final String ARCHIVE_URI = "/bookmarks/archive";
     private static final String UNARCHIVE_URI = "/bookmarks/unarchive";
@@ -55,17 +56,28 @@ public class InstapaperService {
     }
 
     private Stream<ResponseElement> makeResponseElementRequest(@NonNull AuthToken authToken, @NonNull String requestUri, @NonNull Optional<Map<String, String>> parameters) throws IOException {
-        return makeRequest(authToken, requestUri, parameters, new TypeReference<List<Map<String, Object>>>() {}).stream().map(ResponseElement::new);
+        return makeRequest(authToken, requestUri, parameters, new TypeReference<List<Map<String, Object>>>() {
+        }).stream().map(ResponseElement::new);
+    }
+
+    public VerifyCredentialsResponse verifyCredentials(@NonNull AuthToken authToken) throws IOException {
+        return VerifyCredentialsResponse
+                .builder()
+                .user(makeResponseElementRequest(authToken, VERIFY_CREDENTIALS, Optional.empty())
+                        .findFirst()
+                        .map(User::forResponseElement)
+                        .get()).build();
     }
 
     // TODO: Add parameters
     public BookmarksListResponse getBookmarks(@NonNull AuthToken authToken, @NonNull BookmarksListRequest request) throws IOException {
         // TODO: Create generic code to add parameters.
-        Map<String, Object> response = makeRequest(authToken, BOOKMARKS_LIST_URI, Optional.empty(), new TypeReference<Map<String, Object>>() {});
+        Map<String, Object> response = makeRequest(authToken, BOOKMARKS_LIST_URI, Optional.empty(), new TypeReference<Map<String, Object>>() {
+        });
 
         return BookmarksListResponse.builder()
-                .bookmarks(((List<Map<String, Object>>)response.get(KEY_BOOKMARKS)).stream().map(Bookmark::forResponseElement).collect(Collectors.toList()))
-                .user(User.forResponseElement(((Map<String, Object>)response.get(KEY_USER))))
+                .bookmarks(((List<Map<String, Object>>) response.get(KEY_BOOKMARKS)).stream().map(Bookmark::forResponseElement).collect(Collectors.toList()))
+                .user(User.forResponseElement(((Map<String, Object>) response.get(KEY_USER))))
                 // TODO: Add highlights
                 .build();
     }
