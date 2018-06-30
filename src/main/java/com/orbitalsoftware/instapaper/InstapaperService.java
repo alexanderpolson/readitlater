@@ -8,6 +8,7 @@ import lombok.NonNull;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -16,15 +17,20 @@ import java.util.stream.Stream;
 public class InstapaperService {
 
     private static final String HMACSHA1SignatureType = "HMAC-SHA1";
-    private static final String BASE_API_URL = "https://www.instapaper.com/api";
+    private static final String BASE_API_URL = "https://www.instapaper.com/api/1.1";
 
-    private static final String AUTHORIZATION_URI = "/1/oauth/access_token";
-    private static final String BOOKMARKS_LIST_URI = "/1/bookmarks/list";
-    private static final String ARCHIVE_URI = "/1/bookmarks/archive";
-    private static final String UNARCHIVE_URI = "/1/bookmarks/unarchive";
-    private static final String DELETE_URI = "/1/bookmarks/delete";
-    private static final String STAR_URI = "/1/bookmarks/star";
-    private static final String UNSTAR_URI = "/1/bookmarks/unstar";
+    private static final String AUTHORIZATION_URI = "/oauth/access_token";
+    private static final String BOOKMARKS_LIST_URI = "/bookmarks/list";
+    private static final String ARCHIVE_URI = "/bookmarks/archive";
+    private static final String UNARCHIVE_URI = "/bookmarks/unarchive";
+    private static final String DELETE_URI = "/bookmarks/delete";
+    private static final String STAR_URI = "/bookmarks/star";
+    private static final String UNSTAR_URI = "/bookmarks/unstar";
+
+    // For bookmarks/list operation.
+    private static final String KEY_BOOKMARKS = "bookmarks";
+    private static final String KEY_USER = "user";
+    private static final String KEY_HIGHLIGHTS = "highlights";
 
     private static final String KEY_ELEMENT_TYPE = "type";
 
@@ -42,30 +48,26 @@ public class InstapaperService {
     }
 
     // TODO: The return type may need to be generalized to adjust for different response content.
-    private Stream<ResponseElement> makeRequest(@NonNull AuthToken authToken, @NonNull String requestUri, @NonNull Optional<Map<String, String>> parameters) throws IOException {
-        List<Map<String, Object>> response = objectMapper.readValue(oAuth.makeRequest(Optional.of(authToken), requestUri, parameters), new TypeReference<List<Map<String, Object>>>() {});
-        return response.stream().map(ResponseElement::new);
+    private <T> T makeRequest(@NonNull AuthToken authToken, @NonNull String requestUri, @NonNull Optional<Map<String, String>> parameters, TypeReference<T> responseType) throws IOException {
+        String responseJson = oAuth.makeRequest(Optional.of(authToken), requestUri, parameters);
+        System.err.printf("Response JSON: %s%n", responseJson);
+        return objectMapper.readValue(responseJson, responseType);
+    }
+
+    private Stream<ResponseElement> makeResponseElementRequest(@NonNull AuthToken authToken, @NonNull String requestUri, @NonNull Optional<Map<String, String>> parameters) throws IOException {
+        return makeRequest(authToken, requestUri, parameters, new TypeReference<List<Map<String, Object>>>() {}).stream().map(ResponseElement::new);
     }
 
     // TODO: Add parameters
     public BookmarksListResponse getBookmarks(@NonNull AuthToken authToken, @NonNull BookmarksListRequest request) throws IOException {
         // TODO: Create generic code to add parameters.
-        BookmarksListResponse.BookmarksListResponseBuilder responseBuilder =  BookmarksListResponse.builder();
-        List<Bookmark> bookmarks = new LinkedList<Bookmark>();
-        responseBuilder.bookmarks(bookmarks);
-        makeRequest(authToken, BOOKMARKS_LIST_URI, Optional.empty()).forEach(element -> {
-            switch (element.getType()) {
-                case (User.TYPE):
-                    responseBuilder.user(User.forResponseElement(element));
-                    break;
-                case (Bookmark.TYPE):
-                    bookmarks.add(Bookmark.forResponseElement(element));
-                    break;
-                default:
-                    System.err.printf("Don't know how to handle element of type \"%s\"%n", element.getType());
-            }
-        });
-        return responseBuilder.build();
+        Map<String, Object> response = makeRequest(authToken, BOOKMARKS_LIST_URI, Optional.empty(), new TypeReference<Map<String, Object>>() {});
+
+        return BookmarksListResponse.builder()
+                .bookmarks(((List<Map<String, Object>>)response.get(KEY_BOOKMARKS)).stream().map(Bookmark::forResponseElement).collect(Collectors.toList()))
+                .user(User.forResponseElement(((Map<String, Object>)response.get(KEY_USER))))
+                // TODO: Add highlights
+                .build();
     }
 
     private Optional<Bookmark> firstBookmarkFromResponse(Stream<ResponseElement> elementStream) {
@@ -78,7 +80,7 @@ public class InstapaperService {
         ArchiveBookmarkResponse.ArchiveBookmarkResponseBuilder responseBuilder = ArchiveBookmarkResponse.builder();
         Map<String, String> parameters = new HashMap<>();
         parameters.put("bookmark_id", request.getBookmarkId().toString());
-        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeRequest(authoToken, ARCHIVE_URI, Optional.of(parameters)));
+        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeResponseElementRequest(authoToken, ARCHIVE_URI, Optional.of(parameters)));
         responseBuilder.bookmark(bookmark.get());
         return responseBuilder.build();
     }
@@ -87,7 +89,7 @@ public class InstapaperService {
         StarBookmarkResponse.StarBookmarkResponseBuilder responseBuilder = StarBookmarkResponse.builder();
         Map<String, String> parameters = new HashMap<>();
         parameters.put("bookmark_id", request.getBookmarkId().toString());
-        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeRequest(authoToken, STAR_URI, Optional.of(parameters)));
+        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeResponseElementRequest(authoToken, STAR_URI, Optional.of(parameters)));
         responseBuilder.bookmark(bookmark.get());
         return responseBuilder.build();
     }
@@ -96,7 +98,7 @@ public class InstapaperService {
         UnstarBookmarkResponse.UnstarBookmarkResponseBuilder responseBuilder = UnstarBookmarkResponse.builder();
         Map<String, String> parameters = new HashMap<>();
         parameters.put("bookmark_id", request.getBookmarkId().toString());
-        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeRequest(authoToken, UNSTAR_URI, Optional.of(parameters)));
+        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeResponseElementRequest(authoToken, UNSTAR_URI, Optional.of(parameters)));
         responseBuilder.bookmark(bookmark.get());
         return responseBuilder.build();
     }
@@ -105,7 +107,7 @@ public class InstapaperService {
         UnarchiveBookmarkResponse.UnarchiveBookmarkResponseBuilder responseBuilder = UnarchiveBookmarkResponse.builder();
         Map<String, String> parameters = new HashMap<>();
         parameters.put("bookmark_id", request.getBookmarkId().toString());
-        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeRequest(authoToken, UNARCHIVE_URI, Optional.of(parameters)));
+        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeResponseElementRequest(authoToken, UNARCHIVE_URI, Optional.of(parameters)));
         responseBuilder.bookmark(bookmark.get());
         return responseBuilder.build();
     }
@@ -113,6 +115,6 @@ public class InstapaperService {
     public void deleteBookmark(@NonNull AuthToken authoToken, DeleteBookmarkRequest request) throws IOException {
         Map<String, String> parameters = new HashMap<>();
         parameters.put("bookmark_id", request.getBookmarkId().toString());
-        makeRequest(authoToken, DELETE_URI, Optional.of(parameters));
+        makeResponseElementRequest(authoToken, DELETE_URI, Optional.of(parameters));
     }
 }

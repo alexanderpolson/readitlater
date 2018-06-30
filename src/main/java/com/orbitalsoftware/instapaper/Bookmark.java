@@ -7,6 +7,7 @@ import lombok.NonNull;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
 import java.util.Optional;
 
 @Builder
@@ -36,6 +37,10 @@ public class Bookmark {
     private final Double progress;
     private final Boolean isStarred;
 
+    static Bookmark forResponseElement(Map<String, Object> element) {
+        return forResponseElement(new ResponseElement(element));
+    }
+
     static Bookmark forResponseElement(@NonNull ResponseElement element) {
         if (!element.getType().equals(TYPE)) {
             throw new IllegalArgumentException("Provided element is not of type user.");
@@ -53,6 +58,7 @@ public class Bookmark {
                 .isStarred(element.getAsBoolean(KEY_STARRED))
                 .build();
     }
+
     static boolean isBookmark(@NonNull ResponseElement element) {
         return element.getType().equals(TYPE);
     }
