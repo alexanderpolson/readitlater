@@ -1,5 +1,6 @@
 package com.orbitalsoftware.instapaper;
 
+import com.amazon.ask.model.Response;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
@@ -27,7 +28,7 @@ public class Bookmark {
     private final Integer bookmarkId;
     private final String hash;
     private final String title;
-    private final URL url;
+    private final String url;
     private final Optional<String> description;
     private final Optional<String> privateSource;
     private final Integer progressTimestamp;
@@ -35,7 +36,7 @@ public class Bookmark {
     private final Double progress;
     private final Boolean isStarred;
 
-    static Bookmark forResponseElement(@NonNull ResponseElementHelper element) throws MalformedURLException {
+    static Bookmark forResponseElement(@NonNull ResponseElement element) {
         if (!element.getType().equals(TYPE)) {
             throw new IllegalArgumentException("Provided element is not of type user.");
         }
@@ -44,12 +45,15 @@ public class Bookmark {
                 .bookmarkId(element.getAsType(KEY_BOOKMARK_ID, Integer.class))
                 .hash(element.get(KEY_HASH))
                 .title(element.get(KEY_TITLE))
-                .url(new URL(element.get(KEY_URL)))
+                .url(element.get(KEY_URL)) // TODO: Is there any value to making this an URL object?
                 .description(Optional.ofNullable(element.get(KEY_DESCRIPTION)))
                 .privateSource(Optional.ofNullable(element.get(KEY_PRIVATE_SOURCE)))
                 .progressTimestamp(element.getAsType(KEY_PROGRESS_TIMESTAMP, Integer.class))
                 .time(element.getAsType(KEY_TIME, Integer.class))
                 .isStarred(element.getAsBoolean(KEY_STARRED))
                 .build();
+    }
+    static boolean isBookmark(@NonNull ResponseElement element) {
+        return element.getType().equals(TYPE);
     }
 }

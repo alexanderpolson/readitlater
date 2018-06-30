@@ -3,8 +3,6 @@ package com.orbitalsoftware.instapaper;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.Map;
-
 @Builder
 @Data
 public class User {
@@ -17,7 +15,7 @@ public class User {
     private final String username;
     private final boolean isSubscriptionActive;
 
-    static User forResponseElement(ResponseElementHelper element) {
+    static User forResponseElement(ResponseElement element) {
         if (!element.getType().equals(TYPE)) {
             throw new IllegalArgumentException("Provided element is not of type user.");
         }

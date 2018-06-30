@@ -4,14 +4,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orbitalsoftware.oauth.AuthToken;
 import com.orbitalsoftware.oauth.OAuth;
-import lombok.Data;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.*;
+import java.util.stream.Stream;
 
+/**
+ * <a href="https://www.instapaper.com/api">Instapaper API</a>.
+ */
 public class InstapaperService {
 
     private static final String HMACSHA1SignatureType = "HMAC-SHA1";
@@ -19,6 +20,11 @@ public class InstapaperService {
 
     private static final String AUTHORIZATION_URI = "/oauth/access_token";
     private static final String BOOKMARKS_LIST_URI = "/bookmarks/list";
+    private static final String ARCHIVE_URI = "/bookmarks/archive";
+    private static final String UNARCHIVE_URI = "/bookmarks/unarchive";
+    private static final String DELETE_URI = "/bookmarks/delete";
+    private static final String STAR_URI = "/bookmarks/star";
+    private static final String UNSTAR_URI = "/bookmarks/unstar";
 
     private static final String KEY_ELEMENT_TYPE = "type";
 
@@ -36,38 +42,77 @@ public class InstapaperService {
     }
 
     // TODO: The return type may need to be generalized to adjust for different response content.
-    private List<Map<String, Object>> makeRequest(@NonNull AuthToken authToken, @NonNull String requestUri, @NonNull Optional<Map<String, String>> parameters) throws IOException {
-        return objectMapper.readValue(oAuth.makeRequest(Optional.of(authToken), requestUri, parameters), new TypeReference<List<Map<String, Object>>>() {});
+    private Stream<ResponseElement> makeRequest(@NonNull AuthToken authToken, @NonNull String requestUri, @NonNull Optional<Map<String, String>> parameters) throws IOException {
+        List<Map<String, Object>> response = objectMapper.readValue(oAuth.makeRequest(Optional.of(authToken), requestUri, parameters), new TypeReference<List<Map<String, Object>>>() {});
+        return response.stream().map(ResponseElement::new);
     }
 
     // TODO: Add parameters
-    public BookmarksListResponse getBookmarks(@NonNull BookmarksListRequest request) throws IOException {
+    public BookmarksListResponse getBookmarks(@NonNull AuthToken authToken, @NonNull BookmarksListRequest request) throws IOException {
         // TODO: Create generic code to add parameters.
-        return createBookmarksListResponse(makeRequest(request.getAuthToken(), BOOKMARKS_LIST_URI, Optional.empty()));
-    }
-
-    // TODO: This is likely better placed in a factory class of some sort.
-    private BookmarksListResponse createBookmarksListResponse(@NonNull List<Map<String, Object>> response) throws MalformedURLException {
         BookmarksListResponse.BookmarksListResponseBuilder responseBuilder =  BookmarksListResponse.builder();
         List<Bookmark> bookmarks = new LinkedList<Bookmark>();
         responseBuilder.bookmarks(bookmarks);
-
-        for (Map<String, Object> element : response) {
-            ResponseElementHelper e = new ResponseElementHelper(element);
-            String elementType = e.getAsType(KEY_ELEMENT_TYPE, String.class);
-
-            switch (elementType) {
+        makeRequest(authToken, BOOKMARKS_LIST_URI, Optional.empty()).forEach(element -> {
+            switch (element.getType()) {
                 case (User.TYPE):
-                    responseBuilder.user(User.forResponseElement(e));
+                    responseBuilder.user(User.forResponseElement(element));
                     break;
                 case (Bookmark.TYPE):
-                    bookmarks.add(Bookmark.forResponseElement(e));
+                    bookmarks.add(Bookmark.forResponseElement(element));
                     break;
                 default:
-                    System.err.printf("Don't know how to handle element of type \"%s\"%n", elementType);
+                    System.err.printf("Don't know how to handle element of type \"%s\"%n", element.getType());
             }
-        }
-
+        });
         return responseBuilder.build();
+    }
+
+    private Optional<Bookmark> firstBookmarkFromResponse(Stream<ResponseElement> elementStream) {
+        return elementStream.filter(Bookmark::isBookmark).findFirst().map(element -> Bookmark.forResponseElement(element));
+    }
+
+    // TODO: DRY up these methods.
+    // TODO: Create more elegant way to populate parameter Map.
+    public ArchiveBookmarkResponse archiveBookmark(@NonNull AuthToken authoToken, ArchiveBookmarkRequest request) throws IOException {
+        ArchiveBookmarkResponse.ArchiveBookmarkResponseBuilder responseBuilder = ArchiveBookmarkResponse.builder();
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("bookmark_id", request.getBookmarkId().toString());
+        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeRequest(authoToken, ARCHIVE_URI, Optional.of(parameters)));
+        responseBuilder.bookmark(bookmark.get());
+        return responseBuilder.build();
+    }
+
+    public StarBookmarkResponse archiveBookmark(@NonNull AuthToken authoToken, StarBookmarkRequest request) throws IOException {
+        StarBookmarkResponse.StarBookmarkResponseBuilder responseBuilder = StarBookmarkResponse.builder();
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("bookmark_id", request.getBookmarkId().toString());
+        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeRequest(authoToken, STAR_URI, Optional.of(parameters)));
+        responseBuilder.bookmark(bookmark.get());
+        return responseBuilder.build();
+    }
+
+    public UnstarBookmarkResponse unstarBookmark(@NonNull AuthToken authoToken, UnstarBookmarkRequest request) throws IOException {
+        UnstarBookmarkResponse.UnstarBookmarkResponseBuilder responseBuilder = UnstarBookmarkResponse.builder();
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("bookmark_id", request.getBookmarkId().toString());
+        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeRequest(authoToken, UNSTAR_URI, Optional.of(parameters)));
+        responseBuilder.bookmark(bookmark.get());
+        return responseBuilder.build();
+    }
+
+    public UnarchiveBookmarkResponse unarchiveBookmark(@NonNull AuthToken authoToken, UnarchiveBookmarkRequest request) throws IOException {
+        UnarchiveBookmarkResponse.UnarchiveBookmarkResponseBuilder responseBuilder = UnarchiveBookmarkResponse.builder();
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("bookmark_id", request.getBookmarkId().toString());
+        Optional<Bookmark> bookmark = firstBookmarkFromResponse(makeRequest(authoToken, UNARCHIVE_URI, Optional.of(parameters)));
+        responseBuilder.bookmark(bookmark.get());
+        return responseBuilder.build();
+    }
+
+    public void deleteBookmark(@NonNull AuthToken authoToken, DeleteBookmarkRequest request) throws IOException {
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("bookmark_id", request.getBookmarkId().toString());
+        makeRequest(authoToken, DELETE_URI, Optional.of(parameters));
     }
 }

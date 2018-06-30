@@ -11,7 +11,6 @@ import java.util.Optional;
 @Builder()
 @Data
 public class BookmarksListRequest {
-    private final AuthToken authToken;
     private final Optional<Integer> limit;
     private final Optional<String> folderId; // unread (default), starred, archive, or a folder_id from folders/list
     private final Optional<List<Integer>> have; // A list of bookmark_ids that the client already has (see API documentation)

@@ -5,11 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orbitalsoftware.oauth.*;
 
 import java.io.*;
-import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 public class Main {
 
@@ -25,12 +23,16 @@ public class Main {
     private static final String TOKEN_SECRET = "tokenSecret";
 
     private final InstapaperService instapaperService;
+    private final AuthToken authToken;
 
     public Main() throws Exception {
         instapaperService = new InstapaperService(O_AUTH_CONSUMER_TOKEN, O_AUTH_CONSUMER_SECRET);
+        authToken = getAuthToken(AUTH_TOKEN_PROPERTIES_PATH);
     }
 
     private void run() throws Exception {
+//        archive();
+//        unarchive();
         getBookmarks();
 //        bookmarkParsing();
     }
@@ -46,11 +48,23 @@ public class Main {
     }
 
     private void getBookmarks() throws Exception {
-        AuthToken authToken = getAuthToken(AUTH_TOKEN_PROPERTIES_PATH);
         BookmarksListRequest request = BookmarksListRequest.builder()
-                .authToken(authToken)
                 .build();
-        System.err.println(instapaperService.getBookmarks(request));
+        System.err.println(instapaperService.getBookmarks(authToken, request));
+    }
+
+    private static final Integer BOOKMARK_ID = 1073345684;
+
+    private void archive() throws Exception {
+        ArchiveBookmarkRequest request = ArchiveBookmarkRequest.builder().bookmarkId(BOOKMARK_ID).build();
+        System.err.printf("Archived bookmark: %s%n", instapaperService.archiveBookmark(authToken, request));
+        getBookmarks();
+    }
+
+    private void unarchive() throws Exception {
+        UnarchiveBookmarkRequest request = UnarchiveBookmarkRequest.builder().bookmarkId(BOOKMARK_ID).build();
+        System.err.printf("Unarchived bookmark: %s%n", instapaperService.unarchiveBookmark(authToken, request));
+        getBookmarks();
     }
 
     private void writeAuthTokenProvider(AuthToken authToken, String fileName) {
