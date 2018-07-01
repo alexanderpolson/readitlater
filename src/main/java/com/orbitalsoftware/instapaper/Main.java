@@ -31,7 +31,8 @@ public class Main {
     }
 
     private void run() throws Exception {
-        System.out.println(instapaperService.verifyCredentials(authToken));
+//        System.out.println(instapaperService.verifyCredentials(authToken));
+        System.out.println(instapaperService.getBookmarkText(authToken, BOOKMARK_ID));
 //        archive();
 //        unarchive();
 //        getBookmarks();

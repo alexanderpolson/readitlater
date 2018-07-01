@@ -22,6 +22,7 @@ public class InstapaperService {
     private static final String AUTHORIZATION_URI = "/oauth/access_token";
     private static final String VERIFY_CREDENTIALS = "/account/verify_credentials";
     private static final String BOOKMARKS_LIST_URI = "/bookmarks/list";
+    private static final String BOOKMARK_GET_TEXT_URI = "/bookmarks/get_text";
     private static final String ARCHIVE_URI = "/bookmarks/archive";
     private static final String UNARCHIVE_URI = "/bookmarks/unarchive";
     private static final String DELETE_URI = "/bookmarks/delete";
@@ -80,6 +81,12 @@ public class InstapaperService {
                 .user(User.forResponseElement(((Map<String, Object>) response.get(KEY_USER))))
                 // TODO: Add highlights
                 .build();
+    }
+
+    public String getBookmarkText(@NonNull AuthToken authToken, @NonNull Integer bookmarkId) throws IOException {
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("bookmark_id", bookmarkId.toString());
+        return oAuth.makeRequest(Optional.of(authToken), BOOKMARK_GET_TEXT_URI, Optional.of(parameters));
     }
 
     private Optional<Bookmark> firstBookmarkFromResponse(Stream<ResponseElement> elementStream) {
