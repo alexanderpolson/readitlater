@@ -107,7 +107,7 @@ public class InstapaperService {
         makeRequest(
             authToken,
             BOOKMARKS_LIST_URI,
-            Optional.empty(),
+            Optional.of(parameters),
             new TypeReference<Map<String, Object>>() {});
 
     return BookmarksListResponse.builder()

@@ -7,6 +7,7 @@ import com.orbitalsoftware.oauth.*;
 import java.io.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 public class Main {
@@ -32,10 +33,10 @@ public class Main {
 
     private void run() throws Exception {
 //        System.out.println(instapaperService.verifyCredentials(authToken));
-        System.out.println(instapaperService.getBookmarkText(authToken, BOOKMARK_ID));
+//        System.out.println(instapaperService.getBookmarkText(authToken, BOOKMARK_ID));
 //        archive();
 //        unarchive();
-//        getBookmarks();
+        getBookmarks();
 //        bookmarkParsing();
     }
 
@@ -52,7 +53,11 @@ public class Main {
     private void getBookmarks() throws Exception {
         BookmarksListRequest request = BookmarksListRequest.builder()
                 .build();
-        System.err.println(instapaperService.getBookmarks(authToken, request));
+        BookmarksListResponse response = instapaperService.getBookmarks(authToken, request);
+        System.out.println(response);
+        request = BookmarksListRequest.builder().have(Optional.of(response.getBookmarks().subList(0, response.getBookmarks().size() - 2))).build();
+        response = instapaperService.getBookmarks(authToken, request);
+        System.out.println(response);
     }
 
     private static final Integer BOOKMARK_ID = 1073345684;
