@@ -9,6 +9,9 @@ import java.util.Optional;
 import static com.amazon.ask.request.Predicates.intentName;
 
 public class HelpIntentHandler implements RequestHandler {
+  private static final String helpText =
+      "You can say \"Read article\", \"Skip article\", \"Star article\", \"Archive article\", or \"Delete article\".";
+
     @Override
     public boolean canHandle(HandlerInput input) {
         return input.matches(intentName("AMAZON.HelpIntent"));
@@ -16,11 +19,11 @@ public class HelpIntentHandler implements RequestHandler {
 
     @Override
     public Optional<Response> handle(HandlerInput input) {
-        String speechText = "You can say hello to me!";
         return input.getResponseBuilder()
-                .withSpeech(speechText)
-                .withSimpleCard("HelloWorld", speechText)
-                .withReprompt(speechText)
+                .withSpeech(helpText)
+                .withSimpleCard("HelloWorld", helpText)
+                .withReprompt(helpText)
+                .withShouldEndSession(false)
                 .build();
     }
 }
