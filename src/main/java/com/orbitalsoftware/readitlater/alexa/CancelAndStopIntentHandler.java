@@ -8,17 +8,19 @@ import java.util.Optional;
 
 import static com.amazon.ask.request.Predicates.intentName;
 
+// TODO: Come back to this and make it more intelligent.
 public class CancelAndStopIntentHandler implements RequestHandler {
-    @Override
-    public boolean canHandle(HandlerInput input) {
-        return input.matches(intentName("AMAZON.StopIntent").or(intentName("AMAZON.CancelIntent")));
-    }
+  @Override
+  public boolean canHandle(HandlerInput input) {
+    return input.matches(intentName("AMAZON.StopIntent").or(intentName("AMAZON.CancelIntent")));
+  }
 
-    @Override
-    public Optional<Response> handle(HandlerInput input) {
-        return input.getResponseBuilder()
-                .withSpeech("Goodbye")
-                .withSimpleCard("HelloWorld", "Goodbye")
-                .build();
-    }
+  @Override
+  public Optional<Response> handle(HandlerInput input) {
+    return input
+        .getResponseBuilder()
+        .withSpeech("Goodbye")
+        .withSimpleCard("HelloWorld", "Goodbye")
+        .build();
+  }
 }

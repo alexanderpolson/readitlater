@@ -7,7 +7,10 @@ import com.orbitalsoftware.oauth.OAuth;
 import lombok.NonNull;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -151,7 +154,7 @@ public class InstapaperService {
     return responseBuilder.build();
   }
 
-  public StarBookmarkResponse archiveBookmark(
+  public StarBookmarkResponse starBookmark(
       @NonNull AuthToken authoToken, StarBookmarkRequest request) throws IOException {
     StarBookmarkResponse.StarBookmarkResponseBuilder responseBuilder =
         StarBookmarkResponse.builder();
