@@ -1,13 +1,11 @@
 package com.orbitalsoftware.readitlater.alexa;
 
-import com.amazon.ask.dispatcher.request.handler.HandlerInput;
-import com.amazon.ask.model.Intent;
-import com.amazon.ask.model.Response;
+import static com.amazon.ask.request.Predicates.intentName;
 
+import com.amazon.ask.dispatcher.request.handler.HandlerInput;
+import com.amazon.ask.model.Response;
 import java.io.IOException;
 import java.util.Optional;
-
-import static com.amazon.ask.request.Predicates.intentName;
 
 public class StarArticleIntentHandler extends AbstractReadItLaterIntentHandler {
 
@@ -20,13 +18,8 @@ public class StarArticleIntentHandler extends AbstractReadItLaterIntentHandler {
   }
 
   @Override
-  Optional<Response> handle(HandlerInput input, SessionManager session) throws IOException {
+  Optional<Response> handle(SessionManager session) throws IOException {
     session.starCurrentArticle();
-    return input
-        .getResponseBuilder()
-        .withSpeech(STAR_MSG)
-        .addDelegateDirective(
-            Intent.builder().withName(GetNextArticleRequestHandler.INTENT_NAME).build())
-        .build();
+    return new GetNextArticleRequestHandler().handle(session);
   }
 }

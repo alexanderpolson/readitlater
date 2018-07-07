@@ -1,14 +1,21 @@
 package com.orbitalsoftware.readitlater.alexa;
 
-import com.amazon.ask.model.Session;
-import com.orbitalsoftware.instapaper.*;
+import com.amazon.ask.dispatcher.request.handler.HandlerInput;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.orbitalsoftware.instapaper.ArchiveBookmarkRequest;
+import com.orbitalsoftware.instapaper.Bookmark;
+import com.orbitalsoftware.instapaper.BookmarksListRequest;
+import com.orbitalsoftware.instapaper.BookmarksListResponse;
+import com.orbitalsoftware.instapaper.DeleteBookmarkRequest;
+import com.orbitalsoftware.instapaper.InstapaperService;
+import com.orbitalsoftware.instapaper.StarBookmarkRequest;
 import com.orbitalsoftware.oauth.AuthToken;
-import lombok.NonNull;
-import org.jsoup.Jsoup;
-
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
+import lombok.Getter;
+import lombok.NonNull;
+import org.jsoup.Jsoup;
 
 public class SessionManager {
 
@@ -24,20 +31,22 @@ public class SessionManager {
   private static final String PROMPT_FORMAT =
       "The next story in your queue is entitled \"%s\". What would you like to do?";
 
-  private final Session session;
+  @Getter private final HandlerInput input;
+  private final ObjectMapper mapper;
   private InstapaperService instapaperService;
-  private AuthToken authToken;
+  private final AuthToken authToken;
 
   private static final String KEY_CURRENT_ARTICLE = "CurrentArticle";
 
   private Optional<Bookmark> currentArticle = Optional.empty();
 
-  public SessionManager(@NonNull Session session) throws Exception {
-    this.session = session;
-    String token = System.getProperty(CONSUMER_TOKEN_KEY);
-    String secret = System.getProperty(CONSUMER_SECRET_KEY);
+  public SessionManager(@NonNull HandlerInput input) throws Exception {
+    this.input = input;
+    this.mapper = new ObjectMapper();
+    String token = System.getenv(CONSUMER_TOKEN_KEY);
+    String secret = System.getenv(CONSUMER_SECRET_KEY);
     instapaperService = new InstapaperService(token, secret);
-
+    authToken = getAuthToken();
     loadOrGetNextStory();
   }
 
@@ -55,12 +64,25 @@ public class SessionManager {
 
   private void loadOrGetNextStory() throws IOException {
     currentArticle =
-        Optional.ofNullable((Bookmark) session.getAttributes().get(KEY_CURRENT_ARTICLE));
+        Optional.ofNullable(
+                input.getAttributesManager().getSessionAttributes().get(KEY_CURRENT_ARTICLE))
+            .flatMap(rawArticle -> bookmarkFromJson((String) rawArticle));
     if (!currentArticle.isPresent()) {
       currentArticle = getNextStory();
       if (currentArticle.isPresent()) {
-        session.getAttributes().put(KEY_CURRENT_ARTICLE, currentArticle.get());
+        input
+            .getAttributesManager()
+            .getSessionAttributes()
+            .put(KEY_CURRENT_ARTICLE, mapper.writeValueAsString(currentArticle.get()));
       }
+    }
+  }
+
+  private Optional<Bookmark> bookmarkFromJson(String json) {
+    try {
+      return Optional.of(mapper.readValue(json, Bookmark.class));
+    } catch (IOException e) {
+      return Optional.empty();
     }
   }
 
@@ -126,7 +148,7 @@ public class SessionManager {
         String filteredStoryText =
             Jsoup.parse(
                     instapaperService.getBookmarkText(
-                        getAuthToken(), currentArticle.get().getBookmarkId()))
+                        authToken, currentArticle.get().getBookmarkId()))
                 .text();
         result = Optional.of(filteredStoryText);
       }

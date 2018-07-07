@@ -3,7 +3,6 @@ package com.orbitalsoftware.readitlater.alexa;
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.dispatcher.request.handler.RequestHandler;
 import com.amazon.ask.model.Response;
-
 import java.io.IOException;
 import java.util.Optional;
 
@@ -18,12 +17,13 @@ public abstract class AbstractReadItLaterIntentHandler implements RequestHandler
   @Override
   public Optional<Response> handle(HandlerInput input) {
     try {
-      SessionManager session = new SessionManager(input.getRequestEnvelope().getSession());
-      return handle(input, session);
+      SessionManager session = new SessionManager(input);
+      return handle(session);
     } catch (Exception e) {
+      e.printStackTrace();
       return input.getResponseBuilder().withSpeech(ERROR_MSG).withShouldEndSession(true).build();
     }
   }
 
-  abstract Optional<Response> handle(HandlerInput input, SessionManager session) throws IOException;
+  abstract Optional<Response> handle(SessionManager session) throws IOException;
 }

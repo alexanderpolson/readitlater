@@ -4,7 +4,6 @@ import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.LaunchRequest;
 import com.amazon.ask.model.Response;
 import com.amazon.ask.request.Predicates;
-
 import java.io.IOException;
 import java.util.Optional;
 
@@ -27,14 +26,16 @@ public class GetNextArticleRequestHandler extends AbstractReadItLaterIntentHandl
   }
 
   @Override
-  Optional<Response> handle(HandlerInput input, SessionManager session) throws IOException {
+  Optional<Response> handle(SessionManager session) throws IOException {
     Optional<String> nextStoryPrompt = session.getNextStoryPrompt();
-    String promptFormat = isLaunchRequest(input) ? LAUNCH_TEXT_FORMAT : NEXT_ARTICLE_FORMAT;
+    String promptFormat =
+        isLaunchRequest(session.getInput()) ? LAUNCH_TEXT_FORMAT : NEXT_ARTICLE_FORMAT;
     String speechText =
         nextStoryPrompt
             .map((text) -> String.format(promptFormat, text))
             .orElse(String.format(promptFormat, NO_ARTICLES));
-    return input
+    return session
+        .getInput()
         .getResponseBuilder()
         .withSpeech(speechText)
         .withSimpleCard(DEFAULT_CARD_TITLE, speechText)
