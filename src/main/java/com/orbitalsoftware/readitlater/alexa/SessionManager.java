@@ -2,6 +2,7 @@ package com.orbitalsoftware.readitlater.alexa;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.orbitalsoftware.instapaper.ArchiveBookmarkRequest;
 import com.orbitalsoftware.instapaper.Bookmark;
 import com.orbitalsoftware.instapaper.BookmarksListRequest;
@@ -11,6 +12,9 @@ import com.orbitalsoftware.instapaper.InstapaperService;
 import com.orbitalsoftware.instapaper.StarBookmarkRequest;
 import com.orbitalsoftware.oauth.AuthToken;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import lombok.Getter;
@@ -36,22 +40,23 @@ public class SessionManager {
   private InstapaperService instapaperService;
   private final AuthToken authToken;
 
-  private static final String KEY_CURRENT_ARTICLE = "CurrentArticle";
+  private static final String KEY_CUSTOMER_STATE = "CustomerState";
 
-  private Optional<Bookmark> currentArticle = Optional.empty();
+  private CustomerState customerState = new CustomerState(Optional.empty(), new LinkedList<>());
 
   public SessionManager(@NonNull HandlerInput input) throws Exception {
     this.input = input;
     this.mapper = new ObjectMapper();
+    this.mapper.registerModule(new Jdk8Module());
     String token = System.getenv(CONSUMER_TOKEN_KEY);
     String secret = System.getenv(CONSUMER_SECRET_KEY);
     instapaperService = new InstapaperService(token, secret);
     authToken = getAuthToken();
-    loadOrGetNextStory();
+    loadCustomerState();
   }
 
   public boolean hasArticle() {
-    return currentArticle.isPresent();
+    return customerState.getCurrentArticle().isPresent();
   }
 
   private AuthToken getAuthToken() throws IOException {
@@ -62,20 +67,36 @@ public class SessionManager {
     return AuthToken.builder().tokenKey(tokenKey).tokenSecret(tokenSecret).build();
   }
 
-  private void loadOrGetNextStory() throws IOException {
-    currentArticle =
-        Optional.ofNullable(
-                input.getAttributesManager().getSessionAttributes().get(KEY_CURRENT_ARTICLE))
-            .flatMap(rawArticle -> bookmarkFromJson((String) rawArticle));
-    if (!currentArticle.isPresent()) {
-      currentArticle = getNextStory();
-      if (currentArticle.isPresent()) {
-        input
-            .getAttributesManager()
-            .getSessionAttributes()
-            .put(KEY_CURRENT_ARTICLE, mapper.writeValueAsString(currentArticle.get()));
+  private void setNextArticle() throws IOException {
+    customerState.setCurrentArticle(getNextArticle());
+    if (customerState.hasArticle()) {
+      saveCustomerState();
+    }
+  }
+
+  private void loadCustomerState() throws IOException {
+    String rawCustomerState =
+        (String) input.getAttributesManager().getPersistentAttributes().get(KEY_CUSTOMER_STATE);
+    if (rawCustomerState == null) {
+      this.customerState = CustomerState.emptyState();
+    } else {
+      try {
+        this.customerState = mapper.readValue(rawCustomerState, CustomerState.class);
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }
+
+    if (!this.customerState.hasArticle()) {
+      setNextArticle();
+    }
+  }
+
+  private void saveCustomerState() throws IOException {
+    Map<String, Object> persistedAttributes = new HashMap<>();
+    persistedAttributes.put(KEY_CUSTOMER_STATE, mapper.writeValueAsString(customerState));
+    input.getAttributesManager().setPersistentAttributes(persistedAttributes);
+    input.getAttributesManager().savePersistentAttributes();
   }
 
   private Optional<Bookmark> bookmarkFromJson(String json) {
@@ -87,11 +108,11 @@ public class SessionManager {
   }
 
   private void clearCurrentArticle() {
-    currentArticle = Optional.empty();
+    customerState.setCurrentArticle(Optional.empty());
   }
 
   private void throwIfNoCurrentArticle() {
-    if (!currentArticle.isPresent()) {
+    if (!customerState.hasArticle()) {
       throw new IllegalStateException("There are currently no articles available.");
     }
   }
@@ -100,27 +121,36 @@ public class SessionManager {
     throwIfNoCurrentArticle();
     instapaperService.deleteBookmark(
         authToken,
-        DeleteBookmarkRequest.builder().bookmarkId(currentArticle.get().getBookmarkId()).build());
+        DeleteBookmarkRequest.builder()
+            .bookmarkId(customerState.getCurrentArticle().get().getBookmarkId())
+            .build());
     clearCurrentArticle();
+    setNextArticle();
   }
 
   public void archiveCurrentArticle() throws IOException {
     throwIfNoCurrentArticle();
     instapaperService.archiveBookmark(
         authToken,
-        ArchiveBookmarkRequest.builder().bookmarkId(currentArticle.get().getBookmarkId()).build());
+        ArchiveBookmarkRequest.builder()
+            .bookmarkId(customerState.getCurrentArticle().get().getBookmarkId())
+            .build());
     clearCurrentArticle();
+    setNextArticle();
   }
 
   public void starCurrentArticle() throws IOException {
     throwIfNoCurrentArticle();
     instapaperService.starBookmark(
         authToken,
-        StarBookmarkRequest.builder().bookmarkId(currentArticle.get().getBookmarkId()).build());
+        StarBookmarkRequest.builder()
+            .bookmarkId(customerState.getCurrentArticle().get().getBookmarkId())
+            .build());
     clearCurrentArticle();
+    setNextArticle();
   }
 
-  private Optional<Bookmark> getNextStory() throws IOException {
+  private Optional<Bookmark> getNextArticle() throws IOException {
     // TODO: Add skipped stories here.
     BookmarksListResponse response =
         instapaperService.getBookmarks(getAuthToken(), BookmarksListRequest.builder().build());
@@ -129,11 +159,12 @@ public class SessionManager {
         .getBookmarks()
         .stream()
         .filter(bookmark -> !bookmark.getUrl().startsWith("https://www.youtube.com"))
+        .filter(bookmark -> !customerState.getArticlesToSkip().contains(bookmark.getBookmarkId()))
         .findFirst();
   }
 
   public Optional<String> getNextStoryTitle() {
-    return currentArticle.map(s -> s.getTitle());
+    return customerState.getCurrentArticle().map(s -> s.getTitle());
   }
 
   public Optional<String> getNextStoryPrompt() {
@@ -144,17 +175,23 @@ public class SessionManager {
   public Optional<String> getArticleTextPrompt() throws IOException {
     Optional<String> result = Optional.empty();
     try {
-      if (currentArticle.isPresent()) {
+      if (customerState.hasArticle()) {
         String filteredStoryText =
             Jsoup.parse(
                     instapaperService.getBookmarkText(
-                        authToken, currentArticle.get().getBookmarkId()))
+                        authToken, customerState.getCurrentArticle().get().getBookmarkId()))
                 .text();
         result = Optional.of(filteredStoryText);
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
+      e.printStackTrace();
       // TODO: Add logging.
     }
     return result;
+  }
+
+  public void skipCurrentArticle() throws IOException {
+    customerState.skipCurrentArticle();
+    setNextArticle(); // Also saves state.
   }
 }

@@ -10,15 +10,15 @@ public class ReadItLaterStreamHandler extends SkillStreamHandler {
 
   private static Skill getSkill() {
     return Skills.standard()
-        //        .withTableName(STATE_TABLE_NAME)
-        //        .withAutoCreateTable(true)
+        .withTableName(STATE_TABLE_NAME)
+        .withAutoCreateTable(true)
         .addRequestHandlers(
             //            new LaunchIntentHandler(),
-            new GetNextArticleRequestHandler(),
+            new ReadItLaterIntentsRequestHandler(),
             new ReadArticleIntentHandler(),
-            new ArchiveArticleIntentHandler(),
-            new StarArticleIntentHandler(),
-            new DeleteArticleIntentHandler(),
+            //            new ArchiveArticleIntentHandler(),
+            //            new StarArticleIntentHandler(),
+            //            new DeleteArticleIntentHandler(),
             new CancelAndStopIntentHandler(),
             new HelpIntentHandler(),
             new SessionEndedRequestHandler())

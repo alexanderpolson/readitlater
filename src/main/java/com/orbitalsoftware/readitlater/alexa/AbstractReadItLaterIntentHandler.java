@@ -18,7 +18,9 @@ public abstract class AbstractReadItLaterIntentHandler implements RequestHandler
   public Optional<Response> handle(HandlerInput input) {
     try {
       SessionManager session = new SessionManager(input);
-      return handle(session);
+      Optional<Response> response = handle(session);
+      System.err.printf("About to send response: %s%n", response.get());
+      return response;
     } catch (Exception e) {
       e.printStackTrace();
       return input.getResponseBuilder().withSpeech(ERROR_MSG).withShouldEndSession(true).build();
