@@ -3,13 +3,16 @@ package com.orbitalsoftware.instapaper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orbitalsoftware.oauth.AuthToken;
-import org.jsoup.Jsoup;
-
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import org.jsoup.Jsoup;
 
 public class Main {
 
@@ -34,10 +37,10 @@ public class Main {
 
   private void run() throws Exception {
     //        System.out.println(instapaperService.verifyCredentials(authToken));
-    storyText();
+    //    storyText();
     //        archive();
     //        unarchive();
-    //        getBookmarks();
+    getBookmarks();
     //        bookmarkParsing();
   }
 
@@ -63,14 +66,20 @@ public class Main {
   private void getBookmarks() throws Exception {
     BookmarksListRequest request = BookmarksListRequest.builder().build();
     BookmarksListResponse response = instapaperService.getBookmarks(authToken, request);
-    System.out.println(response);
-    request =
-        BookmarksListRequest.builder()
-            .have(
-                Optional.of(response.getBookmarks().subList(0, response.getBookmarks().size() - 2)))
-            .build();
-    response = instapaperService.getBookmarks(authToken, request);
-    System.out.println(response);
+    //    System.out.println(response);
+    //    request =
+    //        BookmarksListRequest.builder()
+    //            .have(
+    //                Optional.of(response.getBookmarks().subList(0, response.getBookmarks().size()
+    // - 2)))
+    //            .build();
+    //    response = instapaperService.getBookmarks(authToken, request);
+    System.out.println(
+        response
+            .getBookmarks()
+            .stream()
+            .map(b -> b.getTime().toString())
+            .collect(Collectors.joining(",\n")));
   }
 
   private static final Integer BOOKMARK_ID = 1073345684;
