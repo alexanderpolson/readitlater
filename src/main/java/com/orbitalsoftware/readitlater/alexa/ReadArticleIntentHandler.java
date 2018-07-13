@@ -10,6 +10,10 @@ import java.util.Optional;
 public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
 
   private static final String INTENT_NAME = "ReadArticleIntent";
+  private static final String CONTINUE_PROMPT =
+      "%s That's the end of page %d. There are %d pages left. Would you like to continue reading?";
+  private static final String END_OF_ARTICLE =
+      "%s That's the end of the article. Would you like archive, star, delete or skip the article?";
 
   @Override
   public boolean canHandle(HandlerInput handlerInput) {
@@ -18,8 +22,30 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
 
   @Override
   Optional<Response> handle(SessionManager session) throws IOException {
-    String speechText = session.getArticleTextPrompt().orElse(NO_ARTICLES);
-    String cardTitle = session.getNextStoryTitle().orElse(DEFAULT_CARD_TITLE);
+    String speechText = NO_ARTICLES;
+    String cardTitle = DEFAULT_CARD_TITLE;
+
+    Optional<Article> currentArticle = session.getCurrentArticle();
+
+    if (currentArticle.isPresent()) {
+      Article article = currentArticle.get();
+      session.incrementArticlePage();
+      String articleText = session.getArticleTextPrompt().get();
+      if (article.isLastPage()) {
+        speechText = String.format(END_OF_ARTICLE, articleText);
+      } else {
+        speechText =
+            String.format(
+                CONTINUE_PROMPT,
+                articleText,
+                article.getCurrentPage(),
+                article.numPages() - article.getCurrentPage());
+      }
+
+      cardTitle = session.getNextStoryTitle().get();
+    }
+    ;
+
     return session
         .getInput()
         .getResponseBuilder()

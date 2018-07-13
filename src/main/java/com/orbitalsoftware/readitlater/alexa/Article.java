@@ -14,7 +14,7 @@ public class Article {
 
   private final Bookmark bookmark;
   private final List<String> pages;
-  private int currentPage = 1;
+  private int currentPage;
 
   @JsonIgnore
   public boolean isLastPage() {
@@ -33,8 +33,16 @@ public class Article {
     currentPage++;
   }
 
+  private int getCurrentPageIndex() {
+    int currentPageIndex = currentPage - 1;
+    if (currentPageIndex < 0) {
+      currentPageIndex = 0;
+    }
+    return currentPageIndex;
+  }
+
   @JsonIgnore
   public String getCurrentPageText() {
-    return pages.get(currentPage);
+    return pages.get(getCurrentPageIndex());
   }
 }

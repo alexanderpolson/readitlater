@@ -38,7 +38,7 @@ public class SessionManager {
   private static final String TOKEN_SECRET = "tokenSecret";
 
   private static final String PROMPT_FORMAT =
-      "The next story in your queue is entitled \"%s\". What would you like to do?";
+      "The next story in your queue is entitled \"%s\". It is %d pages long. What would you like to do?";
 
   @Getter private final HandlerInput input;
   private final ObjectMapper mapper;
@@ -66,6 +66,15 @@ public class SessionManager {
     return currentArticle.isPresent();
   }
 
+  public void incrementArticlePage() throws IOException {
+    currentArticle.ifPresent((article) -> article.incrementCurrentPage());
+    saveSessionState();
+  }
+
+  public final Optional<Article> getCurrentArticle() {
+    return currentArticle;
+  }
+
   private AuthToken getAuthToken() throws IOException {
     Properties authTokenProperties = new Properties();
     authTokenProperties.load(getClass().getClassLoader().getResourceAsStream(AUTH_TOKEN_RESOURCE));
@@ -74,14 +83,18 @@ public class SessionManager {
     return AuthToken.builder().tokenKey(tokenKey).tokenSecret(tokenSecret).build();
   }
 
-  private void setNextArticle() throws IOException {
-    currentArticle = getNextArticle();
+  private void saveSessionState() throws IOException {
     if (currentArticle.isPresent()) {
       String articleJson = mapper.writeValueAsString(currentArticle.get());
       log.info("Writing article JSON to session: {}", articleJson);
       input.getAttributesManager().getSessionAttributes().put(KEY_CURRENT_ARTICLE, articleJson);
       saveCustomerState();
     }
+  }
+
+  private void setNextArticle() throws IOException {
+    currentArticle = getNextArticle();
+    saveSessionState();
   }
 
   private void loadCustomerState() throws IOException {
@@ -206,7 +219,9 @@ public class SessionManager {
   }
 
   public Optional<String> getNextStoryPrompt() {
-    return getNextStoryTitle().map(t -> String.format(PROMPT_FORMAT, t));
+    return currentArticle.map(
+        (article) ->
+            String.format(PROMPT_FORMAT, article.getBookmark().getTitle(), article.numPages()));
   }
 
   // TODO: Add star, archive, or delete question at the end.
