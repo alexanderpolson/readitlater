@@ -20,7 +20,7 @@ public class ReadItLaterIntentsRequestHandler extends AbstractReadItLaterIntentH
   private static final String ARCHIVED_FORMAT =
       "The article has been archived. " + NEXT_ARTICLE_FORMAT;
   private static final String STARRED_FORMAT =
-      "The article has been starred. " + NEXT_ARTICLE_FORMAT;
+      "The article has been starred and archived. " + NEXT_ARTICLE_FORMAT;
   private static final String DELETED_FORMAT =
       "The article has been deleted. " + NEXT_ARTICLE_FORMAT;
   private static final String SKIPPED_FORMAT =

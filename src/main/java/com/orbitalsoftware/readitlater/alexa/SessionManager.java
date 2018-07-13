@@ -180,8 +180,8 @@ public class SessionManager {
         StarBookmarkRequest.builder()
             .bookmarkId(currentArticle.get().getBookmark().getBookmarkId())
             .build());
-    clearCurrentArticle();
-    setNextArticle();
+    // Also archive it so we move to the next article.
+    archiveCurrentArticle();
   }
 
   private Optional<Article> getNextArticle() throws IOException {
