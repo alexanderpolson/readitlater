@@ -8,11 +8,11 @@ import java.util.Optional;
 
 public abstract class AbstractReadItLaterIntentHandler implements RequestHandler {
 
+  private static final String ERROR_MSG = "An error has occurred. Please try again later...";
+
   protected static final String DEFAULT_CARD_TITLE = "Read It Later";
   protected static final String NO_ARTICLES =
       "You don't appear to have any articles. Come back once you've added some.";
-
-  private static final String ERROR_MSG = "An error has occurred. Please try again later...";
 
   @Override
   public Optional<Response> handle(HandlerInput input) {

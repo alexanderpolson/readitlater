@@ -13,12 +13,12 @@ public class ReadItLaterStreamHandler extends SkillStreamHandler {
         .withTableName(STATE_TABLE_NAME)
         .withAutoCreateTable(true)
         .addRequestHandlers(
-            //            new LaunchIntentHandler(),
-            new ReadItLaterIntentsRequestHandler(),
+            new LaunchIntentHandler(),
+            new ArchiveArticleIntentHandler(),
+            new DeleteArticleIntentHandler(),
+            new SkipArticleIntentHandler(),
+            new StarArticleIntentHandler(),
             new ReadArticleIntentHandler(),
-            //            new ArchiveArticleIntentHandler(),
-            //            new StarArticleIntentHandler(),
-            //            new DeleteArticleIntentHandler(),
             new CancelAndStopIntentHandler(),
             new HelpIntentHandler(),
             new SessionEndedRequestHandler())
