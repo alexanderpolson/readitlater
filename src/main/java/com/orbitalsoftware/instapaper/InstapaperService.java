@@ -4,8 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orbitalsoftware.oauth.AuthToken;
 import com.orbitalsoftware.oauth.OAuth;
-import lombok.NonNull;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.NonNull;
 
 /** <a href="https://www.instapaper.com/api">Instapaper API</a>. */
 public class InstapaperService {
@@ -29,6 +28,7 @@ public class InstapaperService {
   private static final String DELETE_URI = "/bookmarks/delete";
   private static final String STAR_URI = "/bookmarks/star";
   private static final String UNSTAR_URI = "/bookmarks/unstar";
+  private static final String UPDATE_READ_PROGRESS_URI = "/bookmarks/update_read_progress";
 
   // For bookmarks/list operation.
   private static final String KEY_HAVE = "have";
@@ -142,61 +142,74 @@ public class InstapaperService {
   // TODO: DRY up these methods.
   // TODO: Create more elegant way to populate parameter Map.
   public ArchiveBookmarkResponse archiveBookmark(
-      @NonNull AuthToken authoToken, ArchiveBookmarkRequest request) throws IOException {
+      @NonNull AuthToken authToken, ArchiveBookmarkRequest request) throws IOException {
     ArchiveBookmarkResponse.ArchiveBookmarkResponseBuilder responseBuilder =
         ArchiveBookmarkResponse.builder();
     Map<String, String> parameters = new HashMap<>();
     parameters.put("bookmark_id", request.getBookmarkId().toString());
     Optional<Bookmark> bookmark =
         firstBookmarkFromResponse(
-            makeResponseElementRequest(authoToken, ARCHIVE_URI, Optional.of(parameters)));
+            makeResponseElementRequest(authToken, ARCHIVE_URI, Optional.of(parameters)));
     responseBuilder.bookmark(bookmark.get());
     return responseBuilder.build();
   }
 
   public StarBookmarkResponse starBookmark(
-      @NonNull AuthToken authoToken, StarBookmarkRequest request) throws IOException {
+      @NonNull AuthToken authToken, StarBookmarkRequest request) throws IOException {
     StarBookmarkResponse.StarBookmarkResponseBuilder responseBuilder =
         StarBookmarkResponse.builder();
     Map<String, String> parameters = new HashMap<>();
     parameters.put("bookmark_id", request.getBookmarkId().toString());
     Optional<Bookmark> bookmark =
         firstBookmarkFromResponse(
-            makeResponseElementRequest(authoToken, STAR_URI, Optional.of(parameters)));
+            makeResponseElementRequest(authToken, STAR_URI, Optional.of(parameters)));
     responseBuilder.bookmark(bookmark.get());
     return responseBuilder.build();
   }
 
   public UnstarBookmarkResponse unstarBookmark(
-      @NonNull AuthToken authoToken, UnstarBookmarkRequest request) throws IOException {
-    UnstarBookmarkResponse.UnstarBookmarkResponseBuilder responseBuilder =
-        UnstarBookmarkResponse.builder();
+      @NonNull AuthToken authToken, UnstarBookmarkRequest request) throws IOException {
     Map<String, String> parameters = new HashMap<>();
     parameters.put("bookmark_id", request.getBookmarkId().toString());
     Optional<Bookmark> bookmark =
         firstBookmarkFromResponse(
-            makeResponseElementRequest(authoToken, UNSTAR_URI, Optional.of(parameters)));
-    responseBuilder.bookmark(bookmark.get());
-    return responseBuilder.build();
+            makeResponseElementRequest(authToken, UNSTAR_URI, Optional.of(parameters)));
+    return UnstarBookmarkResponse.builder().bookmark(bookmark.get()).build();
   }
 
   public UnarchiveBookmarkResponse unarchiveBookmark(
-      @NonNull AuthToken authoToken, UnarchiveBookmarkRequest request) throws IOException {
+      @NonNull AuthToken authToken, UnarchiveBookmarkRequest request) throws IOException {
     UnarchiveBookmarkResponse.UnarchiveBookmarkResponseBuilder responseBuilder =
         UnarchiveBookmarkResponse.builder();
     Map<String, String> parameters = new HashMap<>();
     parameters.put("bookmark_id", request.getBookmarkId().toString());
     Optional<Bookmark> bookmark =
         firstBookmarkFromResponse(
-            makeResponseElementRequest(authoToken, UNARCHIVE_URI, Optional.of(parameters)));
+            makeResponseElementRequest(authToken, UNARCHIVE_URI, Optional.of(parameters)));
     responseBuilder.bookmark(bookmark.get());
     return responseBuilder.build();
   }
 
-  public void deleteBookmark(@NonNull AuthToken authoToken, DeleteBookmarkRequest request)
+  public void deleteBookmark(@NonNull AuthToken authToken, DeleteBookmarkRequest request)
       throws IOException {
     Map<String, String> parameters = new HashMap<>();
     parameters.put("bookmark_id", request.getBookmarkId().toString());
-    makeResponseElementRequest(authoToken, DELETE_URI, Optional.of(parameters));
+    makeResponseElementRequest(authToken, DELETE_URI, Optional.of(parameters));
+  }
+
+  public Bookmark updateReadProgress(
+      @NonNull AuthToken authToken, @NonNull UpdateReadProgressRequest request) throws IOException {
+    if (request.getProgress() < 0 || request.getProgress() > 1) {
+      throw new IllegalArgumentException("Progress needs to be between 0 and 1 (inclusive).");
+    }
+    Long timestamp = System.currentTimeMillis() / 1000;
+    Map<String, String> parameters = new HashMap<>();
+    parameters.put("bookmark_id", request.getBookmarkId().toString());
+    parameters.put("progress", request.getProgress().toString());
+    parameters.put("progress_timestamp", timestamp.toString());
+    return firstBookmarkFromResponse(
+            makeResponseElementRequest(
+                authToken, UPDATE_READ_PROGRESS_URI, Optional.of(parameters)))
+        .get();
   }
 }

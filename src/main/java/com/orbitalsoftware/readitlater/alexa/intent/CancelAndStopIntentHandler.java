@@ -1,12 +1,11 @@
 package com.orbitalsoftware.readitlater.alexa.intent;
 
+import static com.amazon.ask.request.Predicates.intentName;
+
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.dispatcher.request.handler.RequestHandler;
 import com.amazon.ask.model.Response;
-
 import java.util.Optional;
-
-import static com.amazon.ask.request.Predicates.intentName;
 
 // TODO: Come back to this and make it more intelligent.
 public class CancelAndStopIntentHandler implements RequestHandler {
