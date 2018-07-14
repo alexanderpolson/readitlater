@@ -20,6 +20,7 @@ public class ReadItLaterStreamHandler extends SkillStreamHandler {
     return Skills.standard()
         .withTableName(STATE_TABLE_NAME)
         .withAutoCreateTable(true)
+        .addExceptionHandler(new ReadItLaterExceptionHandler())
         .addRequestHandlers(
             new LaunchIntentHandler(),
             new ArchiveArticleIntentHandler(),

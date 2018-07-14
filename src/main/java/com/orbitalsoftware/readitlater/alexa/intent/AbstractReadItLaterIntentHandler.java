@@ -9,8 +9,6 @@ import java.util.Optional;
 
 public abstract class AbstractReadItLaterIntentHandler implements RequestHandler {
 
-  private static final String ERROR_MSG = "An error has occurred. Please try again later...";
-
   protected static final String DEFAULT_CARD_TITLE = "Read It Later";
   protected static final String NO_ARTICLES =
       "You don't appear to have any articles. Come back once you've added some.";
@@ -23,8 +21,11 @@ public abstract class AbstractReadItLaterIntentHandler implements RequestHandler
       System.err.printf("About to send response: %s%n", response.get());
       return response;
     } catch (Exception e) {
-      e.printStackTrace();
-      return input.getResponseBuilder().withSpeech(ERROR_MSG).withShouldEndSession(true).build();
+      // Wrap whatever exception was received in a RuntimeException and let the ExceptionHandler
+      // deal with it.
+      // TODO: Create simple RuntimeException-based exception model for the skill so this try/catch
+      // isn't necessary.
+      throw new RuntimeException(e);
     }
   }
 
