@@ -1,4 +1,4 @@
-package com.orbitalsoftware.readitlater.alexa;
+package com.orbitalsoftware.readitlater.alexa.intent;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.dispatcher.request.handler.RequestHandler;

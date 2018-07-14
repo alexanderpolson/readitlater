@@ -1,9 +1,11 @@
-package com.orbitalsoftware.readitlater.alexa;
+package com.orbitalsoftware.readitlater.alexa.intent;
 
 import static com.amazon.ask.request.Predicates.intentName;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
+import com.orbitalsoftware.readitlater.alexa.Article;
+import com.orbitalsoftware.readitlater.alexa.SessionManager;
 import java.io.IOException;
 import java.util.Optional;
 

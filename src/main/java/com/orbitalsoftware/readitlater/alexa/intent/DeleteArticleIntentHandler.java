@@ -1,5 +1,6 @@
-package com.orbitalsoftware.readitlater.alexa;
+package com.orbitalsoftware.readitlater.alexa.intent;
 
+import com.orbitalsoftware.readitlater.alexa.SessionManager;
 import java.io.IOException;
 import java.util.Optional;
 
