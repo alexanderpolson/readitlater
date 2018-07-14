@@ -49,6 +49,7 @@ public class Bookmark {
         .url(element.get(KEY_URL)) // TODO: Is there any value to making this an URL object?
         .description(Optional.ofNullable(element.get(KEY_DESCRIPTION)))
         .privateSource(Optional.ofNullable(element.get(KEY_PRIVATE_SOURCE)))
+        .progress(element.getAsType(KEY_PROGRESS, Double.class))
         .progressTimestamp(element.getAsType(KEY_PROGRESS_TIMESTAMP, Integer.class))
         .time(element.getAsType(KEY_TIME, Integer.class))
         .isStarred(element.getAsBoolean(KEY_STARRED))
