@@ -40,14 +40,16 @@ public class Main {
     //    storyText();
     //        archive();
     //        unarchive();
-    updateReadProgress();
+    //    updateReadProgress();
     getBookmarks();
     //        bookmarkParsing();
   }
 
   private void updateReadProgress() throws Exception {
-    Integer bookmarkId = 1078623327;
-    instapaperService.updateReadProgress(authToken, UpdateReadProgressRequest.builder().bookmarkId(bookmarkId).progress(0.5).build());
+    Integer bookmarkId = 1079106991;
+    instapaperService.updateReadProgress(
+        authToken,
+        UpdateReadProgressRequest.builder().bookmarkId(bookmarkId).progress(0.0).build());
   }
 
   private void storyText() throws IOException {

@@ -26,6 +26,24 @@ public class Article {
     return pages.size();
   }
 
+  @JsonIgnore
+  public int numPagesLeft() {
+    return numPages() - getCurrentPage();
+  }
+
+  private double articleCharacterLength() {
+    return pages.stream().mapToInt((p) -> p.length()).sum();
+  }
+
+  public double progressPercentage() {
+    double charactersRead = 0;
+    for (int i = 0; i < currentPage; i++) {
+      charactersRead += pages.get(i).length();
+    }
+
+    return charactersRead / articleCharacterLength();
+  }
+
   public void incrementCurrentPage() {
     if (isLastPage()) {
       throw new IllegalStateException("Tried to increment article past the last page.");

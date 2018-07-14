@@ -54,7 +54,7 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
                   CONTINUE_PROMPT,
                   articleText,
                   article.getCurrentPage(),
-                  pagesLeftDescription(article.numPages() - article.getCurrentPage()));
+                  pagesLeftDescription(article.numPagesLeft()));
         }
       }
 

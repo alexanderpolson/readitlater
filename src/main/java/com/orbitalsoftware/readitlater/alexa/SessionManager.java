@@ -11,6 +11,7 @@ import com.orbitalsoftware.instapaper.BookmarksListResponse;
 import com.orbitalsoftware.instapaper.DeleteBookmarkRequest;
 import com.orbitalsoftware.instapaper.InstapaperService;
 import com.orbitalsoftware.instapaper.StarBookmarkRequest;
+import com.orbitalsoftware.instapaper.UpdateReadProgressRequest;
 import com.orbitalsoftware.oauth.AuthToken;
 import java.io.IOException;
 import java.util.HashMap;
@@ -38,7 +39,7 @@ public class SessionManager {
   private static final String TOKEN_SECRET = "tokenSecret";
 
   private static final String PROMPT_FORMAT =
-      "The next story in your queue is entitled \"%s\". It is %d pages long. What would you like to do?";
+      "The next story in your queue is entitled \"%s\" and their are %d pages remaining. What would you like to do?";
 
   @Getter private final HandlerInput input;
   private final ObjectMapper mapper;
@@ -67,8 +68,30 @@ public class SessionManager {
   }
 
   public void incrementArticlePage() throws IOException {
-    currentArticle.ifPresent((article) -> article.incrementCurrentPage());
+    // Updates reading progress for the page, once the next page is started. This prevents from
+    // moving the progress up too aggressively.
+    currentArticle.ifPresent(
+        (article) -> {
+          tryUpdatingReadProgress(article);
+          article.incrementCurrentPage();
+        });
     saveSessionState();
+  }
+
+  private void tryUpdatingReadProgress(Article article) {
+    try {
+      if (article.getCurrentPage() != 0) {
+        Bookmark updatedBookmark =
+            instapaperService.updateReadProgress(
+                authToken,
+                UpdateReadProgressRequest.builder()
+                    .progress(article.progressPercentage())
+                    .bookmarkId(article.getBookmark().getBookmarkId())
+                    .build());
+      }
+    } catch (IOException e) {
+      log.warn("Failed to update read progress for bookmark {}. Skipping");
+    }
   }
 
   public final Optional<Article> getCurrentArticle() {
@@ -205,13 +228,28 @@ public class SessionManager {
     }
   }
 
+  private int calculateCurrentPage(Bookmark bookmark, List<String> pages) {
+    // A return value of 0 essentially means the article hasn't been read yet or at least not gotten
+    // past the first page. This doesn't feel quite right as it's muddling the meaning of this data
+    // because of how state is updated between requests (progress for a page is only updated once
+    // the
+    // next page is requested.
+    // TODO: Reevaluate this and in general clean up this code.
+    return Double.valueOf((Math.floor(bookmark.getProgress() * pages.size()))).intValue();
+  }
+
   private Article articleForBookmark(Bookmark bookmark) throws IOException {
     String bookmarkText =
         Jsoup.parse(instapaperService.getBookmarkText(authToken, bookmark.getBookmarkId())).text();
     log.info("Found text for bookmark: {}", bookmarkText);
     List<String> pages = ArticleTextPaginator.paginateText(bookmarkText, MAX_PAGE_LENGTH);
     log.info("Calculated pages from bookmark text");
-    return Article.builder().bookmark(bookmark).pages(pages).build();
+
+    return Article.builder()
+        .bookmark(bookmark)
+        .pages(pages)
+        .currentPage(calculateCurrentPage(bookmark, pages))
+        .build();
   }
 
   public Optional<String> getNextStoryTitle() {
@@ -219,9 +257,10 @@ public class SessionManager {
   }
 
   public Optional<String> getNextStoryPrompt() {
+    log.info("Creating prompt for article: {}", currentArticle);
     return currentArticle.map(
         (article) ->
-            String.format(PROMPT_FORMAT, article.getBookmark().getTitle(), article.numPages()));
+            String.format(PROMPT_FORMAT, article.getBookmark().getTitle(), article.numPagesLeft()));
   }
 
   // TODO: Add star, archive, or delete question at the end.
