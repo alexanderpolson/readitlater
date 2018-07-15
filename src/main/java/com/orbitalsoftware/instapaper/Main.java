@@ -28,6 +28,8 @@ public class Main {
   private static final String TOKEN_KEY = "tokenKey";
   private static final String TOKEN_SECRET = "tokenSecret";
 
+  private static final Integer DELETED_ID = 1079451394;
+
   private final InstapaperService instapaperService;
   private final AuthToken authToken;
 
@@ -74,7 +76,7 @@ public class Main {
 
   private void getBookmarks() throws Exception {
     List<BookmarkId> haveBookmarks = new LinkedList<>();
-    haveBookmarks.add(BookmarkId.builder().id(1079451394).build());
+    haveBookmarks.add(BookmarkId.builder().id(DELETED_ID).build());
     BookmarksListRequest request =
         BookmarksListRequest.builder().have(Optional.of(haveBookmarks)).build();
     BookmarksListResponse response = instapaperService.getBookmarks(authToken, request);
@@ -87,6 +89,7 @@ public class Main {
     //            .build();
     //    response = instapaperService.getBookmarks(authToken, request);
     System.out.println(response.getBookmarks().stream().findFirst());
+    System.out.println(response.getDeletedIds());
   }
 
   private static final Integer BOOKMARK_ID = 1073345684;

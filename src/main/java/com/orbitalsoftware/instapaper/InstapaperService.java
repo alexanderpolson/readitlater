@@ -37,6 +37,7 @@ public class InstapaperService {
   private static final String KEY_HIGHLIGHTS = "highlights";
 
   private static final String KEY_ELEMENT_TYPE = "type";
+  private static final String KEY_DELETED_IDS = "delete_ids";
 
   private final OAuth oAuth;
   private final ObjectMapper objectMapper;
@@ -117,6 +118,7 @@ public class InstapaperService {
                 .map(Bookmark::forResponseElement)
                 .collect(Collectors.toList()))
         .user(User.forResponseElement(((Map<String, Object>) response.get(KEY_USER))))
+        .deletedIds(BookmarkId.forIds((List<Integer>) response.get(KEY_DELETED_IDS)))
         // TODO: Add highlights
         .build();
   }
