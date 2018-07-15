@@ -86,7 +86,7 @@ public class SessionManager {
                 authToken,
                 UpdateReadProgressRequest.builder()
                     .progress(article.progressPercentage())
-                    .bookmarkId(article.getBookmark().getBookmarkId())
+                    .bookmarkId(article.getBookmark().getBookmarkId().getId())
                     .build());
       }
     } catch (IOException e) {
@@ -179,7 +179,7 @@ public class SessionManager {
     instapaperService.deleteBookmark(
         authToken,
         DeleteBookmarkRequest.builder()
-            .bookmarkId(currentArticle.get().getBookmark().getBookmarkId())
+            .bookmarkId(currentArticle.get().getBookmark().getBookmarkId().getId())
             .build());
     clearCurrentArticle();
     setNextArticle();
@@ -190,7 +190,7 @@ public class SessionManager {
     instapaperService.archiveBookmark(
         authToken,
         ArchiveBookmarkRequest.builder()
-            .bookmarkId(currentArticle.get().getBookmark().getBookmarkId())
+            .bookmarkId(currentArticle.get().getBookmark().getBookmarkId().getId())
             .build());
     clearCurrentArticle();
     setNextArticle();
@@ -201,7 +201,7 @@ public class SessionManager {
     instapaperService.starBookmark(
         authToken,
         StarBookmarkRequest.builder()
-            .bookmarkId(currentArticle.get().getBookmark().getBookmarkId())
+            .bookmarkId(currentArticle.get().getBookmark().getBookmarkId().getId())
             .build());
     // Also archive it so we move to the next article.
     archiveCurrentArticle();
@@ -240,7 +240,8 @@ public class SessionManager {
 
   private Article articleForBookmark(Bookmark bookmark) throws IOException {
     String bookmarkText =
-        Jsoup.parse(instapaperService.getBookmarkText(authToken, bookmark.getBookmarkId())).text();
+        Jsoup.parse(instapaperService.getBookmarkText(authToken, bookmark.getBookmarkId().getId()))
+            .text();
     log.info("Found text for bookmark: {}", bookmarkText);
     List<String> pages = ArticleTextPaginator.paginateText(bookmarkText, MAX_PAGE_LENGTH);
     log.info("Calculated pages from bookmark text");
@@ -270,7 +271,7 @@ public class SessionManager {
 
   public void skipCurrentArticle() throws IOException {
     if (currentArticle.isPresent()) {
-      articlesToSkip.add(currentArticle.get().getBookmark().getBookmarkId());
+      articlesToSkip.add(currentArticle.get().getBookmark().getBookmarkId().getId());
       setNextArticle();
       saveCustomerState();
     }

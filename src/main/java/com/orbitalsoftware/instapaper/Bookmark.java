@@ -22,8 +22,7 @@ public class Bookmark {
   private static final String KEY_PROGRESS = "progress";
   private static final String KEY_STARRED = "starred";
 
-  private final Integer bookmarkId;
-  private final String hash;
+  private final BookmarkId bookmarkId;
   private final String title;
   private final String url;
   private final Optional<String> description;
@@ -43,8 +42,11 @@ public class Bookmark {
     }
 
     return builder()
-        .bookmarkId(element.getAsType(KEY_BOOKMARK_ID, Integer.class))
-        .hash(element.get(KEY_HASH))
+        .bookmarkId(
+            BookmarkId.builder()
+                .id(element.getAsType(KEY_BOOKMARK_ID, Integer.class))
+                .hash(Optional.of(element.get(KEY_HASH)))
+                .build())
         .title(element.get(KEY_TITLE))
         .url(element.get(KEY_URL)) // TODO: Is there any value to making this an URL object?
         .description(Optional.ofNullable(element.get(KEY_DESCRIPTION)))

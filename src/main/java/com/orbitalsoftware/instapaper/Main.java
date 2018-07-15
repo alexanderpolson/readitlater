@@ -8,10 +8,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
-import java.util.stream.Collectors;
 import org.jsoup.Jsoup;
 
 public class Main {
@@ -72,7 +73,10 @@ public class Main {
   }
 
   private void getBookmarks() throws Exception {
-    BookmarksListRequest request = BookmarksListRequest.builder().build();
+    List<BookmarkId> haveBookmarks = new LinkedList<>();
+    haveBookmarks.add(BookmarkId.builder().id(1079451394).build());
+    BookmarksListRequest request =
+        BookmarksListRequest.builder().have(Optional.of(haveBookmarks)).build();
     BookmarksListResponse response = instapaperService.getBookmarks(authToken, request);
     //    System.out.println(response);
     //    request =
@@ -82,12 +86,7 @@ public class Main {
     // - 2)))
     //            .build();
     //    response = instapaperService.getBookmarks(authToken, request);
-    System.out.println(
-        response
-            .getBookmarks()
-            .stream()
-            .map(b -> b.getTime().toString())
-            .collect(Collectors.joining(",\n")));
+    System.out.println(response.getBookmarks().stream().findFirst());
   }
 
   private static final Integer BOOKMARK_ID = 1073345684;

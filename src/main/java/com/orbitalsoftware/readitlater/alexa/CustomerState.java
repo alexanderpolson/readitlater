@@ -18,7 +18,7 @@ public class CustomerState {
   }
 
   public void skipCurrentArticle() {
-    getCurrentArticle().ifPresent(article -> articlesToSkip.add(article.getBookmarkId()));
+    getCurrentArticle().ifPresent(article -> articlesToSkip.add(article.getBookmarkId().getId()));
     System.err.printf("%s%n", currentArticle);
     currentArticle = Optional.empty();
   }

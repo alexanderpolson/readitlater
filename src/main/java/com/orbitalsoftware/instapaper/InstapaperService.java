@@ -100,10 +100,7 @@ public class InstapaperService {
                     KEY_HAVE,
                     bookmarks
                         .stream()
-                        .map(
-                            bookmark ->
-                                String.format(
-                                    "%s:%s", bookmark.getBookmarkId(), bookmark.getHash()))
+                        .map(bookmark -> bookmark.toHaveId())
                         .collect(Collectors.joining(","))));
 
     Map<String, Object> response =
