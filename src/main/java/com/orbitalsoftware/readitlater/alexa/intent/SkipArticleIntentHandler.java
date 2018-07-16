@@ -6,7 +6,7 @@ import java.util.Optional;
 
 public class SkipArticleIntentHandler extends GetNextArticleIntentHandler {
 
-  private static final String INTENT_NAME = "SkiprticleIntent";
+  private static final String INTENT_NAME = "SkipArticleIntent";
   private static final Optional<String> SUCCESS_PROMPT =
       Optional.of("The article has been skipped.");
 
