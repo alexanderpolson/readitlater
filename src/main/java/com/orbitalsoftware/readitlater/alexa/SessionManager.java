@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.orbitalsoftware.instapaper.ArchiveBookmarkRequest;
 import com.orbitalsoftware.instapaper.Bookmark;
+import com.orbitalsoftware.instapaper.BookmarkId;
 import com.orbitalsoftware.instapaper.BookmarksListRequest;
 import com.orbitalsoftware.instapaper.BookmarksListResponse;
 import com.orbitalsoftware.instapaper.DeleteBookmarkRequest;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -207,9 +209,22 @@ public class SessionManager {
     archiveCurrentArticle();
   }
 
+  private void removeDeletedBookmarks(List<BookmarkId> deletedBookmarks) throws IOException {
+    int sizeBeforeRemoval = articlesToSkip.size();
+    articlesToSkip.removeAll(
+        deletedBookmarks.stream().map(b -> b.getId()).collect(Collectors.toList()));
+    if (sizeBeforeRemoval != articlesToSkip.size()) {
+      saveCustomerState();
+    }
+  }
+
   private Optional<Article> getNextArticle() throws IOException {
     BookmarksListResponse response =
-        instapaperService.getBookmarks(getAuthToken(), BookmarksListRequest.builder().build());
+        instapaperService.getBookmarks(
+            getAuthToken(),
+            BookmarksListRequest.builder()
+                .have(Optional.of(BookmarkId.forIds(articlesToSkip)))
+                .build());
     // TODO: Add more detailed filtering.
 
     Optional<Bookmark> nextBookmark =
@@ -221,6 +236,7 @@ public class SessionManager {
             .findFirst();
     if (nextBookmark.isPresent()) {
       log.info("Next article from bookmark: {}", nextBookmark.get());
+      removeDeletedBookmarks(response.getDeletedIds());
       return Optional.of(articleForBookmark(nextBookmark.get()));
     } else {
       log.info("No bookmarks found.");
