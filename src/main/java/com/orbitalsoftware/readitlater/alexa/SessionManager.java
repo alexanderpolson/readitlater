@@ -273,14 +273,14 @@ public class SessionManager {
   }
 
   public Optional<String> getNextStoryTitle() {
-    return currentArticle.map(a -> a.getBookmark().getTitle());
+    return currentArticle.map(a -> StringEscapeUtils.escapeXml11(a.getBookmark().getTitle()));
   }
 
   public Optional<String> getNextStoryPrompt() {
     log.info("Creating prompt for article: {}", currentArticle);
     return currentArticle.map(
         (article) ->
-            String.format(PROMPT_FORMAT, article.getBookmark().getTitle(), article.numPagesLeft()));
+            String.format(PROMPT_FORMAT, getNextStoryTitle().get(), article.numPagesLeft()));
   }
 
   // TODO: Add star, archive, or delete question at the end.
