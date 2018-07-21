@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 
 @Slf4j
@@ -256,8 +257,10 @@ public class SessionManager {
 
   private Article articleForBookmark(Bookmark bookmark) throws IOException {
     String bookmarkText =
-        Jsoup.parse(instapaperService.getBookmarkText(authToken, bookmark.getBookmarkId().getId()))
-            .text();
+        StringEscapeUtils.escapeXml11(
+            Jsoup.parse(
+                    instapaperService.getBookmarkText(authToken, bookmark.getBookmarkId().getId()))
+                .text());
     log.info("Found text for bookmark: {}", bookmarkText);
     List<String> pages = ArticleTextPaginator.paginateText(bookmarkText, MAX_PAGE_LENGTH);
     log.info("Calculated pages from bookmark text");
