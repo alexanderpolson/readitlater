@@ -28,7 +28,7 @@ public class Main {
   private static final String TOKEN_KEY = "tokenKey";
   private static final String TOKEN_SECRET = "tokenSecret";
 
-  private static final Integer BOOKMARK_ID = 1098526684;
+  private static final Integer BOOKMARK_ID = 1098094746;
   private static final Integer DELETED_ID = 1079451394;
 
   private final InstapaperService instapaperService;

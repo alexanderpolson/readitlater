@@ -284,7 +284,9 @@ public class SessionManager {
     log.info("Creating prompt for article: {}", currentArticle);
     return currentArticle.map(
         (article) ->
-            String.format(PROMPT_FORMAT, getNextStoryTitle().get(), article.numPagesLeft()));
+            // TODO: This + 1 is a hack due to the relationship between page number and when it
+            // needs to be incremented.
+            String.format(PROMPT_FORMAT, getNextStoryTitle().get(), article.numPagesLeft() + 1));
   }
 
   // TODO: Add star, archive, or delete question at the end.
