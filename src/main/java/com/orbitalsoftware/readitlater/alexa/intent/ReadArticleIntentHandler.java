@@ -8,7 +8,9 @@ import com.orbitalsoftware.readitlater.alexa.Article;
 import com.orbitalsoftware.readitlater.alexa.SessionManager;
 import java.io.IOException;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
 
   private static final String INTENT_NAME = "ReadArticleIntent";
@@ -17,7 +19,7 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
   private static final String CONTINUE_PROMPT =
       "%s That's the end of page %d. There %s left. Would you like to continue reading?";
   private static final String END_OF_ARTICLE =
-      "That's the end of the article. Would you like archive, star, delete or skip the article?";
+      " That's the end of the article. Would you like archive, star, delete or skip the article?";
 
   @Override
   public boolean canHandle(HandlerInput handlerInput) {
@@ -41,21 +43,25 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
 
     if (currentArticle.isPresent()) {
       Article article = currentArticle.get();
+      log.info("Article: {}", article);
+      log.info(
+          "Current article page: {}/{} ({} pages left)",
+          article.getCurrentPage(),
+          article.numPages(),
+          article.numPagesLeft());
+      String articleText = session.getArticleTextPrompt().get();
       if (article.isLastPage()) {
-        speechText = END_OF_ARTICLE;
+        speechText = articleText + END_OF_ARTICLE;
       } else {
+        speechText =
+            String.format(
+                CONTINUE_PROMPT,
+                articleText,
+                article.getCurrentPage(),
+                pagesLeftDescription(article.numPagesLeft()));
+        // TODO: The problem with this is that it updates reading progress a bit prematurely. This
+        // also means the summary at the beginning is one page shy of truth.
         session.incrementArticlePage();
-        String articleText = session.getArticleTextPrompt().get();
-        if (article.isLastPage()) {
-          speechText = articleText + END_OF_ARTICLE;
-        } else {
-          speechText =
-              String.format(
-                  CONTINUE_PROMPT,
-                  articleText,
-                  article.getCurrentPage(),
-                  pagesLeftDescription(article.numPagesLeft()));
-        }
       }
 
       cardTitle = session.getNextStoryTitle().get();

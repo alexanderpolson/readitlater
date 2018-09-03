@@ -28,6 +28,7 @@ public class Main {
   private static final String TOKEN_KEY = "tokenKey";
   private static final String TOKEN_SECRET = "tokenSecret";
 
+  private static final Integer BOOKMARK_ID = 1098526684;
   private static final Integer DELETED_ID = 1079451394;
 
   private final InstapaperService instapaperService;
@@ -40,19 +41,18 @@ public class Main {
 
   private void run() throws Exception {
     //        System.out.println(instapaperService.verifyCredentials(authToken));
-    //    storyText();
+    updateReadProgress();
+    storyText();
     //        archive();
     //        unarchive();
-    //    updateReadProgress();
-    getBookmarks();
+    //    getBookmarks();
     //        bookmarkParsing();
   }
 
   private void updateReadProgress() throws Exception {
-    Integer bookmarkId = 1079106991;
     instapaperService.updateReadProgress(
         authToken,
-        UpdateReadProgressRequest.builder().bookmarkId(bookmarkId).progress(0.0).build());
+        UpdateReadProgressRequest.builder().bookmarkId(BOOKMARK_ID).progress(0.0).build());
   }
 
   private void storyText() throws IOException {
@@ -91,8 +91,6 @@ public class Main {
     System.out.println(response.getBookmarks().stream().findFirst());
     System.out.println(response.getDeletedIds());
   }
-
-  private static final Integer BOOKMARK_ID = 1073345684;
 
   private void archive() throws Exception {
     ArchiveBookmarkRequest request =

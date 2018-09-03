@@ -10,8 +10,7 @@ import java.util.Optional;
 public class LaunchIntentHandler extends GetNextArticleIntentHandler {
 
   private static final String INTENT_NAME = "LaunchIntent";
-  private static final Optional<String> SUCCESS_PROMPT =
-      Optional.of("Welcome to read it later. You can ask for help at any time.");
+  private static final Optional<String> SUCCESS_PROMPT = Optional.of("Welcome to read it later.");
 
   public LaunchIntentHandler() {
     super(INTENT_NAME);

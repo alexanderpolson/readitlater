@@ -33,7 +33,6 @@ public class SessionManager {
 
   private static final String CONSUMER_TOKEN_KEY = "ConsumerToken";
   private static final String CONSUMER_SECRET_KEY = "ConsumerSecret";
-  private static final int MAX_PAGE_LENGTH = 800;
 
   // TODO: This is hardcoded to my personal account and should be deleted when a proper,
   // user-specific auth mechanism has been created.
@@ -54,11 +53,13 @@ public class SessionManager {
 
   private List<Integer> articlesToSkip = new LinkedList<>();
   private Optional<Article> currentArticle = Optional.empty();
+  private ArticleFactory articleFactory;
 
   public SessionManager(@NonNull HandlerInput input) throws Exception {
     this.input = input;
     this.mapper = new ObjectMapper();
     this.mapper.registerModule(new Jdk8Module());
+    articleFactory = new ArticleFactory();
     String token = System.getenv(CONSUMER_TOKEN_KEY);
     String secret = System.getenv(CONSUMER_SECRET_KEY);
     instapaperService = new InstapaperService(token, secret);
@@ -73,27 +74,35 @@ public class SessionManager {
   public void incrementArticlePage() throws IOException {
     // Updates reading progress for the page, once the next page is started. This prevents from
     // moving the progress up too aggressively.
-    currentArticle.ifPresent(
-        (article) -> {
-          tryUpdatingReadProgress(article);
-          article.incrementCurrentPage();
-        });
+    currentArticle =
+        currentArticle.map(
+            (article) -> {
+              Bookmark bookmark = tryUpdatingReadProgress(article);
+              article.incrementCurrentPage();
+              if (article.isMissingCurrentPage()) {
+                return articleFactory.createArticle(article, getBookmarkText(bookmark).get()).get();
+              } else {
+                return article;
+              }
+            });
     saveSessionState();
   }
 
-  private void tryUpdatingReadProgress(Article article) {
+  private Bookmark tryUpdatingReadProgress(Article article) {
     try {
       if (article.getCurrentPage() != 0) {
-        Bookmark updatedBookmark =
-            instapaperService.updateReadProgress(
-                authToken,
-                UpdateReadProgressRequest.builder()
-                    .progress(article.progressPercentage())
-                    .bookmarkId(article.getBookmark().getBookmarkId().getId())
-                    .build());
+        return instapaperService.updateReadProgress(
+            authToken,
+            UpdateReadProgressRequest.builder()
+                .progress(article.progressPercentage())
+                .bookmarkId(article.getBookmark().getBookmarkId().getId())
+                .build());
+      } else {
+        return article.getBookmark();
       }
     } catch (IOException e) {
       log.warn("Failed to update read progress for bookmark {}. Skipping");
+      return article.getBookmark();
     }
   }
 
@@ -125,16 +134,19 @@ public class SessionManager {
 
   private void loadCustomerState() throws IOException {
     // Persisted Attributes
-    String rawCustomerState =
-        (String) input.getAttributesManager().getPersistentAttributes().get(KEY_ARTICLES_TO_SKIP);
+    Map<String, Object> persistedAttributes =
+        input.getAttributesManager().getPersistentAttributes();
+    log.info("Persisted attributes: {}", persistedAttributes);
+    String rawCustomerState = (String) persistedAttributes.get(KEY_ARTICLES_TO_SKIP);
     if (rawCustomerState == null) {
       this.articlesToSkip = new LinkedList<>();
     } else {
       try {
         this.articlesToSkip =
             mapper.readValue(rawCustomerState, new TypeReference<List<Integer>>() {});
+        log.info("Loaded articles to skip: {}", this.articlesToSkip);
       } catch (IOException e) {
-        e.printStackTrace();
+        log.error("Exception while trying to load articles to skip.", e);
       }
     }
 
@@ -219,7 +231,26 @@ public class SessionManager {
     }
   }
 
+  private Optional<String> getBookmarkText(Bookmark bookmark) {
+    try {
+      return Optional.of(
+          StringEscapeUtils.escapeXml11(
+              Jsoup.parse(
+                      instapaperService.getBookmarkText(
+                          authToken, bookmark.getBookmarkId().getId()))
+                  .text()));
+    } catch (IOException e) {
+      log.error("An error occurred while trying to get bookmark text.", e);
+      return Optional.empty();
+    }
+  }
+
+  private Optional<Article> articleForBookmark(Bookmark bookmark) throws IOException {
+    return getBookmarkText(bookmark).flatMap(text -> articleFactory.createArticle(bookmark, text));
+  }
+
   private Optional<Article> getNextArticle() throws IOException {
+
     BookmarksListResponse response =
         instapaperService.getBookmarks(
             getAuthToken(),
@@ -238,38 +269,11 @@ public class SessionManager {
     if (nextBookmark.isPresent()) {
       log.info("Next article from bookmark: {}", nextBookmark.get());
       removeDeletedBookmarks(response.getDeletedIds());
-      return Optional.of(articleForBookmark(nextBookmark.get()));
+      return articleForBookmark(nextBookmark.get());
     } else {
       log.info("No bookmarks found.");
       return Optional.empty();
     }
-  }
-
-  private int calculateCurrentPage(Bookmark bookmark, List<String> pages) {
-    // A return value of 0 essentially means the article hasn't been read yet or at least not gotten
-    // past the first page. This doesn't feel quite right as it's muddling the meaning of this data
-    // because of how state is updated between requests (progress for a page is only updated once
-    // the
-    // next page is requested.
-    // TODO: Reevaluate this and in general clean up this code.
-    return Double.valueOf((Math.floor(bookmark.getProgress() * pages.size()))).intValue();
-  }
-
-  private Article articleForBookmark(Bookmark bookmark) throws IOException {
-    String bookmarkText =
-        StringEscapeUtils.escapeXml11(
-            Jsoup.parse(
-                    instapaperService.getBookmarkText(authToken, bookmark.getBookmarkId().getId()))
-                .text());
-    log.info("Found text for bookmark: {}", bookmarkText);
-    List<String> pages = ArticleTextPaginator.paginateText(bookmarkText, MAX_PAGE_LENGTH);
-    log.info("Calculated pages from bookmark text");
-
-    return Article.builder()
-        .bookmark(bookmark)
-        .pages(pages)
-        .currentPage(calculateCurrentPage(bookmark, pages))
-        .build();
   }
 
   public Optional<String> getNextStoryTitle() {
