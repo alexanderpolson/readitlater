@@ -13,11 +13,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -123,7 +127,7 @@ public class OAuth {
     System.err.printf("Signature: %s\n", signature);
     authHeaderBuilder.put(O_AUTH_SIGNATURE_KEY, signature);
 
-    CloseableHttpClient httpclient = HttpClients.createDefault();
+    CloseableHttpClient httpClient = HttpClients.createDefault();
     HttpPost request = new HttpPost(url);
     // Add the authorization header.
     String headerParameters = generateAuthHeaderParams(authHeaderParameters);
@@ -137,14 +141,46 @@ public class OAuth {
       request.setEntity(postData);
     }
 
-    CloseableHttpResponse response = httpclient.execute(request);
-    try {
-      System.out.println(response.getStatusLine().getStatusCode());
-      System.out.println(response.getStatusLine().getReasonPhrase());
-      return EntityUtils.toString(response.getEntity());
-    } finally {
-      response.close();
+    return tryRequest(httpClient, request);
+  }
+
+  private static final int MAX_TRIES = 4;
+  private static final long TIMEOUT_TIME_MSEC = 2500;
+
+  private String tryRequest(CloseableHttpClient httpClient, HttpUriRequest request) {
+    // TODO: Generalize this retry logic so it can be used on a per operation basis.
+
+    boolean succeeded = false;
+    int tryNum = 0;
+
+    while (!succeeded && tryNum < MAX_TRIES) {
+      tryNum++;
+      CompletableFuture<String> future =
+          CompletableFuture.supplyAsync(
+              () -> {
+                try (CloseableHttpResponse response = httpClient.execute(request)) {
+                  System.out.println(response.getStatusLine().getStatusCode());
+                  System.out.println(response.getStatusLine().getReasonPhrase());
+                  return EntityUtils.toString(response.getEntity());
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              });
+
+      try {
+        return future.get(TIMEOUT_TIME_MSEC, TimeUnit.MILLISECONDS);
+      } catch (TimeoutException e) {
+        System.err.printf(
+            "Timed out after %d msec waiting for a response from %s.\n",
+            TIMEOUT_TIME_MSEC, request.getURI().toString());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
+    throw new RuntimeException(
+        String.format(
+            "Giving up getting a response from %s after %d tries.",
+            request.getURI().toString(), tryNum));
   }
 
   private String generateAuthHeaderParams(Map<String, String> authHeaderParameters) {

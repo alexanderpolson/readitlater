@@ -2,6 +2,7 @@ package com.orbitalsoftware.instapaper;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.orbitalsoftware.harvest.ExecutionTimer;
 import com.orbitalsoftware.oauth.AuthToken;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -41,12 +42,38 @@ public class Main {
 
   private void run() throws Exception {
     //        System.out.println(instapaperService.verifyCredentials(authToken));
-    updateReadProgress();
-    storyText();
+    //    updateReadProgress();
+    //    storyText();
     //        archive();
     //        unarchive();
     //    getBookmarks();
     //        bookmarkParsing();
+    timeCalls();
+  }
+
+  private void timeCalls() throws IOException {
+    BookmarksListRequest request = BookmarksListRequest.builder().build();
+    BookmarksListResponse response = instapaperService.getBookmarks(authToken, request);
+
+    //    BookmarkId bookmarkId = BookmarkId.builder().id(1117369971).build();
+
+    for (int passNum = 1; passNum <= 100; passNum++) {
+      response
+          .getBookmarks()
+          .stream()
+          .forEach((bookmark) -> getBookmarkText(bookmark.getBookmarkId()));
+      //      getBookmarkText(bookmarkId);
+    }
+
+    ExecutionTimer.summarize();
+  }
+
+  private void getBookmarkText(BookmarkId bookmarkId) {
+    try {
+      String bookmarkText = instapaperService.getBookmarkText(authToken, bookmarkId.getId());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   private void updateReadProgress() throws Exception {

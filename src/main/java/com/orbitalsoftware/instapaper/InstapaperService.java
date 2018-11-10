@@ -2,6 +2,7 @@ package com.orbitalsoftware.instapaper;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.orbitalsoftware.harvest.ExecutionTimer;
 import com.orbitalsoftware.oauth.AuthToken;
 import com.orbitalsoftware.oauth.OAuth;
 import java.io.IOException;
@@ -32,6 +33,7 @@ public class InstapaperService {
 
   // For bookmarks/list operation.
   private static final String KEY_HAVE = "have";
+  private static final String KEY_LIMIT = "limit";
   private static final String KEY_BOOKMARKS = "bookmarks";
   private static final String KEY_USER = "user";
   private static final String KEY_HIGHLIGHTS = "highlights";
@@ -91,44 +93,55 @@ public class InstapaperService {
   // TODO: Add parameters
   public BookmarksListResponse getBookmarks(
       @NonNull AuthToken authToken, @NonNull BookmarksListRequest request) throws IOException {
-    // TODO: Create generic code to add parameters.
-    Map<String, String> parameters = new HashMap<>();
-    request
-        .getHave()
-        .ifPresent(
-            bookmarks ->
-                parameters.put(
-                    KEY_HAVE,
-                    bookmarks
-                        .stream()
-                        .map(bookmark -> bookmark.toHaveId())
-                        .collect(Collectors.joining(","))));
+    ExecutionTimer timer = new ExecutionTimer(getClass(), "getBookmarks");
+    try {
+      // TODO: Create generic code to add parameters.
+      Map<String, String> parameters = new HashMap<>();
+      request.getLimit().ifPresent(limit -> parameters.put(KEY_LIMIT, Integer.toString(limit)));
+      request
+          .getHave()
+          .ifPresent(
+              bookmarks ->
+                  parameters.put(
+                      KEY_HAVE,
+                      bookmarks
+                          .stream()
+                          .map(bookmark -> bookmark.toHaveId())
+                          .collect(Collectors.joining(","))));
 
-    Map<String, Object> response =
-        makeRequest(
-            authToken,
-            BOOKMARKS_LIST_URI,
-            Optional.of(parameters),
-            new TypeReference<Map<String, Object>>() {});
+      Map<String, Object> response =
+          makeRequest(
+              authToken,
+              BOOKMARKS_LIST_URI,
+              Optional.of(parameters),
+              new TypeReference<Map<String, Object>>() {});
 
-    return BookmarksListResponse.builder()
-        .bookmarks(
-            ((List<Map<String, Object>>) response.get(KEY_BOOKMARKS))
-                .stream()
-                .map(Bookmark::forResponseElement)
-                .collect(Collectors.toList()))
-        .user(User.forResponseElement(((Map<String, Object>) response.get(KEY_USER))))
-        .deletedIds(BookmarkId.forIds((List<Integer>) response.get(KEY_DELETED_IDS)))
-        // TODO: Add highlights
-        .build();
+      return BookmarksListResponse.builder()
+          .bookmarks(
+              ((List<Map<String, Object>>) response.get(KEY_BOOKMARKS))
+                  .stream()
+                  .map(Bookmark::forResponseElement)
+                  .collect(Collectors.toList()))
+          .user(User.forResponseElement(((Map<String, Object>) response.get(KEY_USER))))
+          .deletedIds(BookmarkId.forIds((List<Integer>) response.get(KEY_DELETED_IDS)))
+          // TODO: Add highlights
+          .build();
+    } finally {
+      timer.close();
+    }
   }
 
   public String getBookmarkText(@NonNull AuthToken authToken, @NonNull Integer bookmarkId)
       throws IOException {
-    Map<String, String> parameters = new HashMap<>();
-    parameters.put("bookmark_id", bookmarkId.toString());
-    return oAuth.makeRequest(
-        Optional.of(authToken), BOOKMARK_GET_TEXT_URI, Optional.of(parameters));
+    ExecutionTimer timer = new ExecutionTimer(getClass(), "getBookmarkText");
+    try {
+      Map<String, String> parameters = new HashMap<>();
+      parameters.put("bookmark_id", bookmarkId.toString());
+      return oAuth.makeRequest(
+          Optional.of(authToken), BOOKMARK_GET_TEXT_URI, Optional.of(parameters));
+    } finally {
+      timer.close();
+    }
   }
 
   private Optional<Bookmark> firstBookmarkFromResponse(Stream<ResponseElement> elementStream) {
@@ -198,17 +211,22 @@ public class InstapaperService {
 
   public Bookmark updateReadProgress(
       @NonNull AuthToken authToken, @NonNull UpdateReadProgressRequest request) throws IOException {
-    if (request.getProgress() < 0 || request.getProgress() > 1) {
-      throw new IllegalArgumentException("Progress needs to be between 0 and 1 (inclusive).");
+    ExecutionTimer timer = new ExecutionTimer(getClass(), "updateBookmarkProgress");
+    try {
+      if (request.getProgress() < 0 || request.getProgress() > 1) {
+        throw new IllegalArgumentException("Progress needs to be between 0 and 1 (inclusive).");
+      }
+      Long timestamp = System.currentTimeMillis() / 1000;
+      Map<String, String> parameters = new HashMap<>();
+      parameters.put("bookmark_id", request.getBookmarkId().toString());
+      parameters.put("progress", request.getProgress().toString());
+      parameters.put("progress_timestamp", timestamp.toString());
+      return firstBookmarkFromResponse(
+              makeResponseElementRequest(
+                  authToken, UPDATE_READ_PROGRESS_URI, Optional.of(parameters)))
+          .get();
+    } finally {
+      timer.close();
     }
-    Long timestamp = System.currentTimeMillis() / 1000;
-    Map<String, String> parameters = new HashMap<>();
-    parameters.put("bookmark_id", request.getBookmarkId().toString());
-    parameters.put("progress", request.getProgress().toString());
-    parameters.put("progress_timestamp", timestamp.toString());
-    return firstBookmarkFromResponse(
-            makeResponseElementRequest(
-                authToken, UPDATE_READ_PROGRESS_URI, Optional.of(parameters)))
-        .get();
   }
 }

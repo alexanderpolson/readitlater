@@ -42,6 +42,7 @@ public class SessionManager {
 
   private static final String PROMPT_FORMAT =
       "The next story in your queue is entitled \"%s\" and their are %d pages remaining. What would you like to do?";
+  private static final Integer GET_BOOKMARKS_LIMIT = 100;
 
   @Getter private final HandlerInput input;
   private final ObjectMapper mapper;
@@ -255,6 +256,7 @@ public class SessionManager {
         instapaperService.getBookmarks(
             getAuthToken(),
             BookmarksListRequest.builder()
+                .limit(Optional.of(GET_BOOKMARKS_LIMIT))
                 .have(Optional.of(BookmarkId.forIds(articlesToSkip)))
                 .build());
     // TODO: Add more detailed filtering.
