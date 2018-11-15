@@ -44,7 +44,8 @@ public class SessionManager {
       "The next story in your queue is entitled \"%s\" and their are %d pages remaining. What would you like to do?";
   private static final Integer GET_BOOKMARKS_LIMIT = 100;
 
-  @Getter private final HandlerInput input;
+  @Getter
+  private final HandlerInput input;
   private final ObjectMapper mapper;
   private InstapaperService instapaperService;
   private final AuthToken authToken;
@@ -61,8 +62,12 @@ public class SessionManager {
     this.mapper = new ObjectMapper();
     this.mapper.registerModule(new Jdk8Module());
     articleFactory = new ArticleFactory();
-    String token = System.getenv(CONSUMER_TOKEN_KEY);
-    String secret = System.getenv(CONSUMER_SECRET_KEY);
+    // Lambda uses getenv
+//    String token = System.getenv(CONSUMER_TOKEN_KEY);
+//    String secret = System.getenv(CONSUMER_SECRET_KEY);
+    // Tomcat uses getProperty
+    String token = System.getProperty(CONSUMER_TOKEN_KEY);
+    String secret = System.getProperty(CONSUMER_SECRET_KEY);
     instapaperService = new InstapaperService(token, secret);
     authToken = getAuthToken();
     loadCustomerState();
@@ -144,7 +149,8 @@ public class SessionManager {
     } else {
       try {
         this.articlesToSkip =
-            mapper.readValue(rawCustomerState, new TypeReference<List<Integer>>() {});
+            mapper.readValue(rawCustomerState, new TypeReference<List<Integer>>() {
+            });
         log.info("Loaded articles to skip: {}", this.articlesToSkip);
       } catch (IOException e) {
         log.error("Exception while trying to load articles to skip.", e);
@@ -237,8 +243,8 @@ public class SessionManager {
       return Optional.of(
           StringEscapeUtils.escapeXml11(
               Jsoup.parse(
-                      instapaperService.getBookmarkText(
-                          authToken, bookmark.getBookmarkId().getId()))
+                  instapaperService.getBookmarkText(
+                      authToken, bookmark.getBookmarkId().getId()))
                   .text()));
     } catch (IOException e) {
       log.error("An error occurred while trying to get bookmark text.", e);
