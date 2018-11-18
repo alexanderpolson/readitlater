@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Data;
+import org.apache.commons.text.StringEscapeUtils;
 
 @Data
 public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterIntentHandler {
@@ -33,12 +34,13 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
         nextStoryPrompt
             .map((text) -> concatenatePrompts(executedActionPrompt, Optional.of(text)))
             .orElse(concatenatePrompts(executedActionPrompt, Optional.of(NO_ARTICLES)));
+    final String cardText = StringEscapeUtils.unescapeXml(speechText);
     return session
         .getInput()
         .getResponseBuilder()
         .withSpeech(speechText)
         .withSimpleCard(DEFAULT_CARD_TITLE, speechText)
-        .withReprompt(speechText)
+        .withReprompt(cardText)
         .withShouldEndSession(!nextStoryPrompt.isPresent())
         .build();
   }

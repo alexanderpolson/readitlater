@@ -8,17 +8,19 @@ import com.orbitalsoftware.readitlater.alexa.Article;
 import com.orbitalsoftware.readitlater.alexa.SessionManager;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringEscapeUtils;
 
 @Slf4j
 public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
 
+  private static final String SPEECH_DELIMETER = " ";
   private static final String INTENT_NAME = "ReadArticleIntent";
   private static final String ONE_PAGE = "is %d page";
   private static final String MULTIPLE_PAGES = "are %d pages";
   private static final String CONTINUE_PROMPT =
-      "%s That's the end of page %d. There %s left. Would you like to continue reading?";
+      "That's the end of page %d. There %s left. Would you like to continue reading?";
   private static final String END_OF_ARTICLE =
-      " That's the end of the article. Would you like archive, star, delete or skip the article?";
+      "That's the end of the article. Would you like to archive, star, delete, or skip the article?";
 
   @Override
   public boolean canHandle(HandlerInput handlerInput) {
@@ -36,6 +38,7 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
   @Override
   Optional<Response> handle(SessionManager session) throws Exception {
     String speechText = NO_ARTICLES;
+    String repromptText = NO_ARTICLES;
     String cardTitle = DEFAULT_CARD_TITLE;
 
     Optional<Article> currentArticle = session.getCurrentArticle();
@@ -48,31 +51,36 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
           article.getCurrentPage(),
           article.numPages(),
           article.numPagesLeft());
-      String articleText = session.getArticleTextPrompt().get();
+      final String articleText = session.getArticleTextPrompt().get();
+      cardTitle = StringEscapeUtils.unescapeXml(session.getNextStoryTitle().get());
+
       if (article.isLastPage()) {
-        speechText = articleText + END_OF_ARTICLE;
+        repromptText = END_OF_ARTICLE;
       } else {
-        speechText =
+        repromptText =
             String.format(
                 CONTINUE_PROMPT,
-                articleText,
                 article.getCurrentPage(),
                 pagesLeftDescription(article.numPagesLeft()));
+
         // TODO: The problem with this is that it updates reading progress a bit prematurely. This
         // also means the summary at the beginning is one page shy of truth.
         session.incrementArticlePage();
       }
-
-      cardTitle = session.getNextStoryTitle().get();
+      speechText = String.join(SPEECH_DELIMETER, articleText, repromptText);
     }
-
+    final String cardText = StringEscapeUtils.unescapeXml(speechText);
     return session
         .getInput()
         .getResponseBuilder()
         .withSpeech(speechText)
-        .withSimpleCard(cardTitle, speechText)
-        .withReprompt(speechText)
+        .withSimpleCard(cardTitle, cardText)
+        .withReprompt(repromptText)
         .withShouldEndSession(!session.hasArticle())
         .build();
+  }
+
+  public static void main(String[] args) {
+    System.out.println(StringEscapeUtils.unescapeXml("Steven Spielberg&apos;s"));
   }
 }
