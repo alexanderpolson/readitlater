@@ -42,7 +42,7 @@ public class SessionManager {
   private static final String TOKEN_SECRET = "tokenSecret";
 
   private static final String PROMPT_FORMAT =
-      "The next story in your queue is entitled \"%s\" and their are %d pages remaining. What would you like to do?";
+      "The next story in your queue is entitled \"%s\" and their %s remaining. What would you like to do?";
   private static final Integer GET_BOOKMARKS_LIMIT = 100;
 
   @Getter private final HandlerInput input;
@@ -291,10 +291,17 @@ public class SessionManager {
   public Optional<String> getNextStoryPrompt() {
     log.info("Creating prompt for article: {}", currentArticle);
     return currentArticle.map(
-        (article) ->
-            // TODO: This + 1 is a hack due to the relationship between page number and when it
-            // needs to be incremented.
-            String.format(PROMPT_FORMAT, getNextStoryTitle().get(), article.numPagesLeft() + 1));
+        (article) -> {
+          // TODO: This + 1 is a hack due to the relationship between page number and when it
+          // needs to be incremented.
+          int pagesLeft = article.numPagesLeft() + 1;
+          // TO handle correct grammar with respect to single page vs. multiple pages.
+          String pagesLeftDescription =
+              String.format(
+                  "%s %d %s",
+                  pagesLeft == 1 ? "is" : "are", pagesLeft, pagesLeft == 1 ? "page" : "pages");
+          return String.format(PROMPT_FORMAT, getNextStoryTitle().get(), pagesLeftDescription);
+        });
   }
 
   // TODO: Add star, archive, or delete question at the end.
