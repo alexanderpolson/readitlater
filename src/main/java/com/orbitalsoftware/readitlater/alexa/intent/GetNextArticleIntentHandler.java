@@ -25,7 +25,7 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
   }
 
   @Override
-  Optional<Response> handle(SessionManager session) throws IOException {
+  Optional<Response> handle(SessionManager session) throws Exception {
     Optional<String> executedActionPrompt = executeRequestedAction(session);
     Optional<String> nextStoryPrompt = session.getNextStoryPrompt();
 
@@ -55,5 +55,5 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
    * @throws IOException
    */
   protected abstract Optional<String> executeRequestedAction(SessionManager session)
-      throws IOException;
+      throws Exception;
 }

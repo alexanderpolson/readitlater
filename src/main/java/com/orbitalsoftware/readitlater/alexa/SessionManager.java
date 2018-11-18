@@ -44,8 +44,7 @@ public class SessionManager {
       "The next story in your queue is entitled \"%s\" and their are %d pages remaining. What would you like to do?";
   private static final Integer GET_BOOKMARKS_LIMIT = 100;
 
-  @Getter
-  private final HandlerInput input;
+  @Getter private final HandlerInput input;
   private final ObjectMapper mapper;
   private InstapaperService instapaperService;
   private final AuthToken authToken;
@@ -63,8 +62,8 @@ public class SessionManager {
     this.mapper.registerModule(new Jdk8Module());
     articleFactory = new ArticleFactory();
     // Lambda uses getenv
-//    String token = System.getenv(CONSUMER_TOKEN_KEY);
-//    String secret = System.getenv(CONSUMER_SECRET_KEY);
+    //    String token = System.getenv(CONSUMER_TOKEN_KEY);
+    //    String secret = System.getenv(CONSUMER_SECRET_KEY);
     // Tomcat uses getProperty
     String token = System.getProperty(CONSUMER_TOKEN_KEY);
     String secret = System.getProperty(CONSUMER_SECRET_KEY);
@@ -106,7 +105,7 @@ public class SessionManager {
       } else {
         return article.getBookmark();
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.warn("Failed to update read progress for bookmark {}. Skipping");
       return article.getBookmark();
     }
@@ -133,12 +132,12 @@ public class SessionManager {
     }
   }
 
-  private void setNextArticle() throws IOException {
+  private void setNextArticle() throws Exception {
     currentArticle = getNextArticle();
     saveSessionState();
   }
 
-  private void loadCustomerState() throws IOException {
+  private void loadCustomerState() throws Exception {
     // Persisted Attributes
     Map<String, Object> persistedAttributes =
         input.getAttributesManager().getPersistentAttributes();
@@ -149,8 +148,7 @@ public class SessionManager {
     } else {
       try {
         this.articlesToSkip =
-            mapper.readValue(rawCustomerState, new TypeReference<List<Integer>>() {
-            });
+            mapper.readValue(rawCustomerState, new TypeReference<List<Integer>>() {});
         log.info("Loaded articles to skip: {}", this.articlesToSkip);
       } catch (IOException e) {
         log.error("Exception while trying to load articles to skip.", e);
@@ -196,7 +194,7 @@ public class SessionManager {
     }
   }
 
-  public void deleteCurrentArticle() throws IOException {
+  public void deleteCurrentArticle() throws Exception {
     throwIfNoCurrentArticle();
     instapaperService.deleteBookmark(
         authToken,
@@ -207,7 +205,7 @@ public class SessionManager {
     setNextArticle();
   }
 
-  public void archiveCurrentArticle() throws IOException {
+  public void archiveCurrentArticle() throws Exception {
     throwIfNoCurrentArticle();
     instapaperService.archiveBookmark(
         authToken,
@@ -218,7 +216,7 @@ public class SessionManager {
     setNextArticle();
   }
 
-  public void starCurrentArticle() throws IOException {
+  public void starCurrentArticle() throws Exception {
     throwIfNoCurrentArticle();
     instapaperService.starBookmark(
         authToken,
@@ -243,20 +241,20 @@ public class SessionManager {
       return Optional.of(
           StringEscapeUtils.escapeXml11(
               Jsoup.parse(
-                  instapaperService.getBookmarkText(
-                      authToken, bookmark.getBookmarkId().getId()))
+                      instapaperService.getBookmarkText(
+                          authToken, bookmark.getBookmarkId().getId()))
                   .text()));
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.error("An error occurred while trying to get bookmark text.", e);
       return Optional.empty();
     }
   }
 
-  private Optional<Article> articleForBookmark(Bookmark bookmark) throws IOException {
+  private Optional<Article> articleForBookmark(Bookmark bookmark) throws Exception {
     return getBookmarkText(bookmark).flatMap(text -> articleFactory.createArticle(bookmark, text));
   }
 
-  private Optional<Article> getNextArticle() throws IOException {
+  private Optional<Article> getNextArticle() throws Exception {
 
     BookmarksListResponse response =
         instapaperService.getBookmarks(
@@ -302,7 +300,7 @@ public class SessionManager {
     return currentArticle.map(a -> a.getCurrentPageText());
   }
 
-  public void skipCurrentArticle() throws IOException {
+  public void skipCurrentArticle() throws Exception {
     if (currentArticle.isPresent()) {
       articlesToSkip.add(currentArticle.get().getBookmark().getBookmarkId().getId());
       setNextArticle();

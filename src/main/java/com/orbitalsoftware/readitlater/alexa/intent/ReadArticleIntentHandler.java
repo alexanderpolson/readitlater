@@ -6,7 +6,6 @@ import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
 import com.orbitalsoftware.readitlater.alexa.Article;
 import com.orbitalsoftware.readitlater.alexa.SessionManager;
-import java.io.IOException;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,7 +34,7 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
   }
 
   @Override
-  Optional<Response> handle(SessionManager session) throws IOException {
+  Optional<Response> handle(SessionManager session) throws Exception {
     String speechText = NO_ARTICLES;
     String cardTitle = DEFAULT_CARD_TITLE;
 

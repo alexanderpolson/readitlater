@@ -1,7 +1,6 @@
 package com.orbitalsoftware.readitlater.alexa.intent;
 
 import com.orbitalsoftware.readitlater.alexa.SessionManager;
-import java.io.IOException;
 import java.util.Optional;
 
 public class StarArticleIntentHandler extends GetNextArticleIntentHandler {
@@ -15,7 +14,7 @@ public class StarArticleIntentHandler extends GetNextArticleIntentHandler {
   }
 
   @Override
-  protected Optional<String> executeRequestedAction(SessionManager session) throws IOException {
+  protected Optional<String> executeRequestedAction(SessionManager session) throws Exception {
     session.starCurrentArticle();
     return SUCCESS_PROMPT;
   }

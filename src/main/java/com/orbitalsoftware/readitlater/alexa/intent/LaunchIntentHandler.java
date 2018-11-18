@@ -4,7 +4,6 @@ import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.LaunchRequest;
 import com.amazon.ask.request.Predicates;
 import com.orbitalsoftware.readitlater.alexa.SessionManager;
-import java.io.IOException;
 import java.util.Optional;
 
 public class LaunchIntentHandler extends GetNextArticleIntentHandler {
@@ -22,7 +21,7 @@ public class LaunchIntentHandler extends GetNextArticleIntentHandler {
   }
 
   @Override
-  protected Optional<String> executeRequestedAction(SessionManager session) throws IOException {
+  protected Optional<String> executeRequestedAction(SessionManager session) throws Exception {
     // No Op
     return SUCCESS_PROMPT;
   }
