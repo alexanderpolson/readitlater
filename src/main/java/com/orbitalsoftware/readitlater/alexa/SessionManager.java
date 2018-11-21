@@ -285,7 +285,8 @@ public class SessionManager {
   }
 
   public Optional<String> getNextStoryTitle() {
-    return currentArticle.map(a -> StringEscapeUtils.escapeXml11(a.getBookmark().getTitle()));
+    return currentArticle.map(
+        a -> StringEscapeUtils.escapeXml11(Jsoup.parse(a.getBookmark().getTitle()).text()));
   }
 
   public Optional<String> getNextStoryPrompt() {
@@ -300,10 +301,7 @@ public class SessionManager {
               String.format(
                   "%s %d %s",
                   pagesLeft == 1 ? "is" : "are", pagesLeft, pagesLeft == 1 ? "page" : "pages");
-          return String.format(
-              PROMPT_FORMAT,
-              StringEscapeUtils.unescapeXml(getNextStoryTitle().get()),
-              pagesLeftDescription);
+          return String.format(PROMPT_FORMAT, getNextStoryTitle().get(), pagesLeftDescription);
         });
   }
 
