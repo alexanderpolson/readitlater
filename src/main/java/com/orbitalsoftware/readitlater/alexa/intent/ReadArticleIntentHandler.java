@@ -79,8 +79,4 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
         .withShouldEndSession(!session.hasArticle())
         .build();
   }
-
-  public static void main(String[] args) {
-    System.out.println(StringEscapeUtils.unescapeXml("Steven Spielberg&apos;s"));
-  }
 }

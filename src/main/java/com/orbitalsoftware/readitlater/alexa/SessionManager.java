@@ -241,7 +241,7 @@ public class SessionManager {
   private Optional<String> getBookmarkText(Bookmark bookmark) {
     try {
       return Optional.of(
-          StringEscapeUtils.escapeXml11(
+          StringEscapeUtils.unescapeXml(
               Jsoup.parse(
                       instapaperService.getBookmarkText(
                           authToken, bookmark.getBookmarkId().getId()))
@@ -286,7 +286,7 @@ public class SessionManager {
 
   public Optional<String> getNextStoryTitle() {
     return currentArticle.map(
-        a -> StringEscapeUtils.escapeXml11(Jsoup.parse(a.getBookmark().getTitle()).text()));
+        a -> StringEscapeUtils.unescapeXml(Jsoup.parse(a.getBookmark().getTitle()).text()));
   }
 
   public Optional<String> getNextStoryPrompt() {
