@@ -11,6 +11,7 @@ import com.orbitalsoftware.instapaper.StarBookmarkRequest;
 import com.orbitalsoftware.instapaper.StarBookmarkResponse;
 import com.orbitalsoftware.instapaper.UpdateReadProgressRequest;
 import com.orbitalsoftware.oauth.AuthToken;
+import com.orbitalsoftware.oauth.CredentialsProvider;
 import com.orbitalsoftware.retry.RetryStrategy;
 import lombok.NonNull;
 
@@ -25,9 +26,9 @@ public class InstapaperServiceWithRetryStrategies extends InstapaperService {
   private final RetryStrategy defaultRetryStrategy;
   private final RetryStrategy updateReadProgressRetryStrategy;
 
-  public InstapaperServiceWithRetryStrategies(
-      @NonNull String consumerKey, @NonNull String consumerSecret) throws Exception {
-    super(consumerKey, consumerSecret);
+  public InstapaperServiceWithRetryStrategies(@NonNull CredentialsProvider credentialsProvider)
+      throws Exception {
+    super(credentialsProvider);
 
     defaultRetryStrategy =
         RetryStrategy.builder()

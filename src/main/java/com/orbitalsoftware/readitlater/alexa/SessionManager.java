@@ -14,6 +14,7 @@ import com.orbitalsoftware.instapaper.InstapaperService;
 import com.orbitalsoftware.instapaper.StarBookmarkRequest;
 import com.orbitalsoftware.instapaper.UpdateReadProgressRequest;
 import com.orbitalsoftware.oauth.AuthToken;
+import com.orbitalsoftware.oauth.CredentialsProvider;
 import com.orbitalsoftware.readitlater.alexa.clients.InstapaperServiceWithRetryStrategies;
 import java.io.IOException;
 import java.util.HashMap;
@@ -57,19 +58,14 @@ public class SessionManager {
   private Optional<Article> currentArticle = Optional.empty();
   private ArticleFactory articleFactory;
 
-  public SessionManager(@NonNull HandlerInput input) throws Exception {
+  public SessionManager(
+      @NonNull CredentialsProvider credentialsProvider, @NonNull HandlerInput input)
+      throws Exception {
     this.input = input;
     this.mapper = new ObjectMapper();
     this.mapper.registerModule(new Jdk8Module());
     articleFactory = new ArticleFactory();
-    // Lambda uses getenv
-    // TODO: Create CredentialProvider interface and implementations to cover these two use cases.
-    //    String token = System.getenv(CONSUMER_TOKEN_KEY);
-    //    String secret = System.getenv(CONSUMER_SECRET_KEY);
-    // Tomcat uses getProperty
-    String token = System.getProperty(CONSUMER_TOKEN_KEY);
-    String secret = System.getProperty(CONSUMER_SECRET_KEY);
-    instapaperService = new InstapaperServiceWithRetryStrategies(token, secret);
+    instapaperService = new InstapaperServiceWithRetryStrategies(credentialsProvider);
     authToken = getAuthToken();
     loadCustomerState();
   }
