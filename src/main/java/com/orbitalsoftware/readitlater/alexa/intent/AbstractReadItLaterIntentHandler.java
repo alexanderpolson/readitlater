@@ -3,7 +3,12 @@ package com.orbitalsoftware.readitlater.alexa.intent;
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.dispatcher.request.handler.RequestHandler;
 import com.amazon.ask.model.Response;
+import com.orbitalsoftware.instapaper.InstapaperService;
+import com.orbitalsoftware.instapaper.auth.PropertiesInstapaperAuthTokenProvider;
+import com.orbitalsoftware.oauth.SystemPropertyOAuthCredentialsProvider;
 import com.orbitalsoftware.readitlater.alexa.SessionManager;
+import com.orbitalsoftware.readitlater.alexa.clients.InstapaperServiceWithRetryStrategies;
+import java.io.InputStream;
 import java.util.Optional;
 
 public abstract class AbstractReadItLaterIntentHandler implements RequestHandler {
@@ -11,11 +16,21 @@ public abstract class AbstractReadItLaterIntentHandler implements RequestHandler
   protected static final String DEFAULT_CARD_TITLE = "Read It Later";
   protected static final String NO_ARTICLES =
       "You don't appear to have any articles. Come back once you've added some.";
+  private static final String AUTH_TOKEN_RESOURCE = "instapaper_auth.token";
 
   @Override
   public Optional<Response> handle(HandlerInput input) {
     try {
-      SessionManager session = new SessionManager(input);
+      // TODO: Instantiate these via Spring.
+      InputStream inputStream =
+          PropertiesInstapaperAuthTokenProvider.class
+              .getClassLoader()
+              .getResourceAsStream(AUTH_TOKEN_RESOURCE);
+      InstapaperService instapaper =
+          new InstapaperServiceWithRetryStrategies(
+              new SystemPropertyOAuthCredentialsProvider(),
+              new PropertiesInstapaperAuthTokenProvider(inputStream));
+      SessionManager session = new SessionManager(instapaper, input);
       Optional<Response> response = handle(session);
       System.err.printf("About to send response: %s%n", response.get());
       return response;

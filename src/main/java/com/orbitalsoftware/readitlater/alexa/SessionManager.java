@@ -13,16 +13,12 @@ import com.orbitalsoftware.instapaper.DeleteBookmarkRequest;
 import com.orbitalsoftware.instapaper.InstapaperService;
 import com.orbitalsoftware.instapaper.StarBookmarkRequest;
 import com.orbitalsoftware.instapaper.UpdateReadProgressRequest;
-import com.orbitalsoftware.oauth.AuthToken;
-import com.orbitalsoftware.oauth.CredentialsProvider;
-import com.orbitalsoftware.readitlater.alexa.clients.InstapaperServiceWithRetryStrategies;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
@@ -33,15 +29,6 @@ import org.jsoup.Jsoup;
 @Slf4j
 public class SessionManager {
 
-  private static final String CONSUMER_TOKEN_KEY = "ConsumerToken";
-  private static final String CONSUMER_SECRET_KEY = "ConsumerSecret";
-
-  // TODO: This is hardcoded to my personal account and should be deleted when a proper,
-  // user-specific auth mechanism has been created.
-  private static final String AUTH_TOKEN_RESOURCE = "instapaper_auth.token";
-  private static final String TOKEN_KEY = "tokenKey";
-  private static final String TOKEN_SECRET = "tokenSecret";
-
   private static final String PROMPT_FORMAT =
       "The next story in your queue is entitled \"%s\" and their %s remaining. What would you like to do?";
   private static final Integer GET_BOOKMARKS_LIMIT = 100;
@@ -49,7 +36,6 @@ public class SessionManager {
   @Getter private final HandlerInput input;
   private final ObjectMapper mapper;
   private InstapaperService instapaperService;
-  private final AuthToken authToken;
 
   private static final String KEY_ARTICLES_TO_SKIP = "ArticlesToSkip";
   private static final String KEY_CURRENT_ARTICLE = "CurrentArticle";
@@ -58,15 +44,13 @@ public class SessionManager {
   private Optional<Article> currentArticle = Optional.empty();
   private ArticleFactory articleFactory;
 
-  public SessionManager(
-      @NonNull CredentialsProvider credentialsProvider, @NonNull HandlerInput input)
+  public SessionManager(@NonNull InstapaperService instapaperService, @NonNull HandlerInput input)
       throws Exception {
     this.input = input;
     this.mapper = new ObjectMapper();
     this.mapper.registerModule(new Jdk8Module());
     articleFactory = new ArticleFactory();
-    instapaperService = new InstapaperServiceWithRetryStrategies(credentialsProvider);
-    authToken = getAuthToken();
+    this.instapaperService = instapaperService;
     loadCustomerState();
   }
 
@@ -95,7 +79,6 @@ public class SessionManager {
     try {
       if (article.getCurrentPage() != 0) {
         return instapaperService.updateReadProgress(
-            authToken,
             UpdateReadProgressRequest.builder()
                 .progress(article.progressPercentage())
                 .bookmarkId(article.getBookmark().getBookmarkId().getId())
@@ -111,14 +94,6 @@ public class SessionManager {
 
   public final Optional<Article> getCurrentArticle() {
     return currentArticle;
-  }
-
-  private AuthToken getAuthToken() throws IOException {
-    Properties authTokenProperties = new Properties();
-    authTokenProperties.load(getClass().getClassLoader().getResourceAsStream(AUTH_TOKEN_RESOURCE));
-    String tokenKey = authTokenProperties.getProperty(TOKEN_KEY);
-    String tokenSecret = authTokenProperties.getProperty(TOKEN_SECRET);
-    return AuthToken.builder().tokenKey(tokenKey).tokenSecret(tokenSecret).build();
   }
 
   private void saveSessionState() throws IOException {
@@ -195,7 +170,6 @@ public class SessionManager {
   public void deleteCurrentArticle() throws Exception {
     throwIfNoCurrentArticle();
     instapaperService.deleteBookmark(
-        authToken,
         DeleteBookmarkRequest.builder()
             .bookmarkId(currentArticle.get().getBookmark().getBookmarkId().getId())
             .build());
@@ -206,7 +180,6 @@ public class SessionManager {
   public void archiveCurrentArticle() throws Exception {
     throwIfNoCurrentArticle();
     instapaperService.archiveBookmark(
-        authToken,
         ArchiveBookmarkRequest.builder()
             .bookmarkId(currentArticle.get().getBookmark().getBookmarkId().getId())
             .build());
@@ -217,7 +190,6 @@ public class SessionManager {
   public void starCurrentArticle() throws Exception {
     throwIfNoCurrentArticle();
     instapaperService.starBookmark(
-        authToken,
         StarBookmarkRequest.builder()
             .bookmarkId(currentArticle.get().getBookmark().getBookmarkId().getId())
             .build());
@@ -238,9 +210,7 @@ public class SessionManager {
     try {
       return Optional.of(
           StringEscapeUtils.unescapeXml(
-              Jsoup.parse(
-                      instapaperService.getBookmarkText(
-                          authToken, bookmark.getBookmarkId().getId()))
+              Jsoup.parse(instapaperService.getBookmarkText(bookmark.getBookmarkId().getId()))
                   .text()));
     } catch (Exception e) {
       log.error("An error occurred while trying to get bookmark text.", e);
@@ -256,7 +226,6 @@ public class SessionManager {
 
     BookmarksListResponse response =
         instapaperService.getBookmarks(
-            getAuthToken(),
             BookmarksListRequest.builder()
                 .limit(Optional.of(GET_BOOKMARKS_LIMIT))
                 .have(Optional.of(BookmarkId.forIds(articlesToSkip)))

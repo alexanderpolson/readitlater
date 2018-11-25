@@ -10,8 +10,9 @@ import com.orbitalsoftware.instapaper.InstapaperService;
 import com.orbitalsoftware.instapaper.StarBookmarkRequest;
 import com.orbitalsoftware.instapaper.StarBookmarkResponse;
 import com.orbitalsoftware.instapaper.UpdateReadProgressRequest;
+import com.orbitalsoftware.instapaper.auth.InstapaperAuthTokenProvider;
 import com.orbitalsoftware.oauth.AuthToken;
-import com.orbitalsoftware.oauth.CredentialsProvider;
+import com.orbitalsoftware.oauth.OAuthCredentialsProvider;
 import com.orbitalsoftware.retry.RetryStrategy;
 import lombok.NonNull;
 
@@ -26,9 +27,11 @@ public class InstapaperServiceWithRetryStrategies extends InstapaperService {
   private final RetryStrategy defaultRetryStrategy;
   private final RetryStrategy updateReadProgressRetryStrategy;
 
-  public InstapaperServiceWithRetryStrategies(@NonNull CredentialsProvider credentialsProvider)
+  public InstapaperServiceWithRetryStrategies(
+      @NonNull OAuthCredentialsProvider oAuthCredentialsProvider,
+      @NonNull InstapaperAuthTokenProvider authTokenProvider)
       throws Exception {
-    super(credentialsProvider);
+    super(oAuthCredentialsProvider, authTokenProvider);
 
     defaultRetryStrategy =
         RetryStrategy.builder()
@@ -79,41 +82,36 @@ public class InstapaperServiceWithRetryStrategies extends InstapaperService {
   }
 
   @Override
-  public BookmarksListResponse getBookmarks(AuthToken authToken, BookmarksListRequest request)
-      throws Exception {
-    return defaultRetryStrategy.execute(() -> super.getBookmarks(authToken, request));
+  public BookmarksListResponse getBookmarks(BookmarksListRequest request) throws Exception {
+    return defaultRetryStrategy.execute(() -> super.getBookmarks(request));
   }
 
   @Override
-  public String getBookmarkText(AuthToken authToken, Integer bookmarkId) throws Exception {
-    return defaultRetryStrategy.execute(() -> super.getBookmarkText(authToken, bookmarkId));
+  public String getBookmarkText(Integer bookmarkId) throws Exception {
+    return defaultRetryStrategy.execute(() -> super.getBookmarkText(bookmarkId));
   }
 
   @Override
-  public ArchiveBookmarkResponse archiveBookmark(
-      AuthToken authToken, ArchiveBookmarkRequest request) throws Exception {
-    return defaultRetryStrategy.execute(() -> super.archiveBookmark(authToken, request));
+  public ArchiveBookmarkResponse archiveBookmark(ArchiveBookmarkRequest request) throws Exception {
+    return defaultRetryStrategy.execute(() -> super.archiveBookmark(request));
   }
 
   @Override
-  public StarBookmarkResponse starBookmark(AuthToken authToken, StarBookmarkRequest request)
-      throws Exception {
-    return defaultRetryStrategy.execute(() -> super.starBookmark(authToken, request));
+  public StarBookmarkResponse starBookmark(StarBookmarkRequest request) throws Exception {
+    return defaultRetryStrategy.execute(() -> super.starBookmark(request));
   }
 
   @Override
-  public void deleteBookmark(AuthToken authToken, DeleteBookmarkRequest request) throws Exception {
+  public void deleteBookmark(DeleteBookmarkRequest request) throws Exception {
     defaultRetryStrategy.execute(
         () -> {
-          super.deleteBookmark(authToken, request);
+          super.deleteBookmark(request);
           return Void.TYPE;
         });
   }
 
   @Override
-  public Bookmark updateReadProgress(AuthToken authToken, UpdateReadProgressRequest request)
-      throws Exception {
-    return updateReadProgressRetryStrategy.execute(
-        () -> super.updateReadProgress(authToken, request));
+  public Bookmark updateReadProgress(UpdateReadProgressRequest request) throws Exception {
+    return updateReadProgressRetryStrategy.execute(() -> super.updateReadProgress(request));
   }
 }
