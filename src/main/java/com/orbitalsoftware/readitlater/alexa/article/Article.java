@@ -1,4 +1,4 @@
-package com.orbitalsoftware.readitlater.alexa;
+package com.orbitalsoftware.readitlater.alexa.article;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.orbitalsoftware.instapaper.Bookmark;

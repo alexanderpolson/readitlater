@@ -4,8 +4,8 @@ import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
 import com.amazon.ask.request.Predicates;
 import com.orbitalsoftware.instapaper.Instapaper;
-import com.orbitalsoftware.readitlater.alexa.Article;
 import com.orbitalsoftware.readitlater.alexa.ReadItLaterSession;
+import com.orbitalsoftware.readitlater.alexa.article.Article;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
@@ -45,7 +45,7 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
       throw new IllegalStateException("There are currently no articles available.");
     }
     Optional<String> executedActionPrompt = executeRequestedAction(session);
-    session.setNextArticle();
+    session.pullNextArticle();
     Optional<String> nextStoryPrompt = getNextStoryPrompt(session);
 
     String speechText =

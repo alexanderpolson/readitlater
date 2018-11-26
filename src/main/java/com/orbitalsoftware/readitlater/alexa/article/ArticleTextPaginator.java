@@ -1,4 +1,4 @@
-package com.orbitalsoftware.readitlater.alexa;
+package com.orbitalsoftware.readitlater.alexa.article;
 
 import java.util.LinkedList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.orbitalsoftware.readitlater.alexa;
+package com.orbitalsoftware.readitlater.alexa.article;
 
 import com.orbitalsoftware.instapaper.Bookmark;
 import java.util.List;
@@ -50,10 +50,8 @@ public class ArticleFactory {
     // A return value of 0 essentially means the article hasn't been read yet or at least not gotten
     // past the first page. This doesn't feel quite right as it's muddling the meaning of this data
     // because of how state is updated between requests (progress for a page is only updated once
-    // the
-    // next page is requested.
+    // the next page is requested.
     // TODO: Reevaluate this and in general clean up this code.
-    // thing.
     return Double.valueOf((Math.floor(bookmark.getProgress() * articlePageCount))).intValue();
   }
 }

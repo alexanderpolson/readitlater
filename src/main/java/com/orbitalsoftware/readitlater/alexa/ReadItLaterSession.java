@@ -10,12 +10,15 @@ import com.orbitalsoftware.instapaper.BookmarksListRequest;
 import com.orbitalsoftware.instapaper.BookmarksListResponse;
 import com.orbitalsoftware.instapaper.Instapaper;
 import com.orbitalsoftware.instapaper.UpdateReadProgressRequest;
+import com.orbitalsoftware.readitlater.alexa.article.Article;
+import com.orbitalsoftware.readitlater.alexa.article.ArticleFactory;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
@@ -49,63 +52,6 @@ public class ReadItLaterSession {
     loadCustomerState();
   }
 
-  public boolean hasArticle() {
-    return currentArticle.isPresent();
-  }
-
-  public void incrementArticlePage() throws IOException {
-    // Updates reading progress for the page, once the next page is started. This prevents from
-    // moving the progress up too aggressively.
-    currentArticle =
-        currentArticle.map(
-            (article) -> {
-              Bookmark bookmark = tryUpdatingReadProgress(article);
-              article.incrementCurrentPage();
-              if (article.isMissingCurrentPage()) {
-                return articleFactory.createArticle(article, getBookmarkText(bookmark).get()).get();
-              } else {
-                return article;
-              }
-            });
-    saveSessionState();
-  }
-
-  private Bookmark tryUpdatingReadProgress(Article article) {
-    try {
-      if (article.getCurrentPage() != 0) {
-        return instapaperService.updateReadProgress(
-            UpdateReadProgressRequest.builder()
-                .progress(article.progressPercentage())
-                .bookmarkId(article.getBookmark().getBookmarkId().getId())
-                .build());
-      } else {
-        return article.getBookmark();
-      }
-    } catch (Exception e) {
-      log.warn("Failed to update read progress for bookmark {}. Skipping");
-      return article.getBookmark();
-    }
-  }
-
-  public final Optional<Article> getCurrentArticle() {
-    return currentArticle;
-  }
-
-  private void saveSessionState() throws IOException {
-    if (currentArticle.isPresent()) {
-      String articleJson = mapper.writeValueAsString(currentArticle.get());
-      log.info("Writing article JSON to session: {}", articleJson);
-      attributesManager.getSessionAttributes().put(KEY_CURRENT_ARTICLE, articleJson);
-      saveCustomerState();
-    }
-  }
-
-  // TODO: This shouldn't be public
-  public void setNextArticle() throws Exception {
-    currentArticle = getNextArticle();
-    saveSessionState();
-  }
-
   private void loadCustomerState() throws Exception {
     // Persisted Attributes
     Map<String, Object> persistedAttributes = attributesManager.getPersistentAttributes();
@@ -132,8 +78,71 @@ public class ReadItLaterSession {
           Optional.ofNullable(mapper.readValue((String) articleJson, Article.class));
     }
     if (!this.currentArticle.isPresent()) {
-      setNextArticle();
+      pullNextArticle();
     }
+  }
+
+  public boolean hasArticle() {
+    return currentArticle.isPresent();
+  }
+
+  public void incrementArticlePage() throws IOException {
+    // Updates reading progress for the page, once the next page is started. This prevents from
+    // moving the progress up too aggressively.
+    currentArticle =
+        currentArticle.map(
+            (article) -> {
+              tryUpdatingReadProgress(article);
+              article.incrementCurrentPage();
+              if (article.isMissingCurrentPage()) {
+                return articleFactory
+                    .createArticle(article, getBookmarkText(article.getBookmark()).get())
+                    .get();
+              } else {
+                return article;
+              }
+            });
+    saveSessionState();
+  }
+
+  private void tryUpdatingReadProgress(Article article) {
+    // We don't need to wait for this to complete as this won't typically affect user experience if
+    // the call fails. Just do it in the background.
+    CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            if (article.getCurrentPage() != 0) {
+              instapaperService.updateReadProgress(
+                  UpdateReadProgressRequest.builder()
+                      .progress(article.progressPercentage())
+                      .bookmarkId(article.getBookmark().getBookmarkId().getId())
+                      .build());
+            }
+          } catch (Exception e) {
+            log.warn("Failed to update read progress for bookmark {}. Skipping");
+          }
+
+          return Void.TYPE;
+        });
+  }
+
+  public final Optional<Article> getCurrentArticle() {
+    return currentArticle;
+  }
+
+  private void saveSessionState() throws IOException {
+    if (currentArticle.isPresent()) {
+      String articleJson = mapper.writeValueAsString(currentArticle.get());
+      log.info("Writing article JSON to session: {}", articleJson);
+      attributesManager.getSessionAttributes().put(KEY_CURRENT_ARTICLE, articleJson);
+      saveCustomerState();
+    }
+  }
+
+  // TODO: This shouldn't be public
+  public void pullNextArticle() throws Exception {
+    currentArticle = getNextArticle();
+    saveSessionState();
   }
 
   private void saveCustomerState() throws IOException {
@@ -203,7 +212,7 @@ public class ReadItLaterSession {
   public void skipCurrentArticle() throws Exception {
     if (currentArticle.isPresent()) {
       articlesToSkip.add(currentArticle.get().getBookmark().getBookmarkId().getId());
-      setNextArticle();
+      pullNextArticle();
       saveCustomerState();
     }
   }
