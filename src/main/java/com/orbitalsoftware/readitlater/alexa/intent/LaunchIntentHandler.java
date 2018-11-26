@@ -3,7 +3,7 @@ package com.orbitalsoftware.readitlater.alexa.intent;
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.LaunchRequest;
 import com.amazon.ask.request.Predicates;
-import com.orbitalsoftware.readitlater.alexa.SessionManager;
+import com.orbitalsoftware.readitlater.alexa.ReadItLaterSession;
 import java.util.Optional;
 
 public class LaunchIntentHandler extends GetNextArticleIntentHandler {
@@ -21,7 +21,7 @@ public class LaunchIntentHandler extends GetNextArticleIntentHandler {
   }
 
   @Override
-  protected Optional<String> executeRequestedAction(SessionManager session) throws Exception {
+  protected Optional<String> executeRequestedAction(ReadItLaterSession session) throws Exception {
     // No Op
     return SUCCESS_PROMPT;
   }

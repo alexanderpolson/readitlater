@@ -6,7 +6,7 @@ import com.amazon.ask.model.Response;
 import com.orbitalsoftware.instapaper.InstapaperService;
 import com.orbitalsoftware.instapaper.auth.PropertiesInstapaperAuthTokenProvider;
 import com.orbitalsoftware.oauth.SystemPropertyOAuthCredentialsProvider;
-import com.orbitalsoftware.readitlater.alexa.SessionManager;
+import com.orbitalsoftware.readitlater.alexa.ReadItLaterSession;
 import com.orbitalsoftware.readitlater.alexa.clients.InstapaperServiceWithRetryStrategies;
 import java.io.InputStream;
 import java.util.Optional;
@@ -30,8 +30,8 @@ public abstract class AbstractReadItLaterIntentHandler implements RequestHandler
           new InstapaperServiceWithRetryStrategies(
               new SystemPropertyOAuthCredentialsProvider(),
               new PropertiesInstapaperAuthTokenProvider(inputStream));
-      SessionManager session = new SessionManager(instapaper, input);
-      Optional<Response> response = handle(session);
+      ReadItLaterSession session = new ReadItLaterSession(instapaper, input.getAttributesManager());
+      Optional<Response> response = handle(input, session);
       System.err.printf("About to send response: %s%n", response.get());
       return response;
     } catch (Exception e) {
@@ -43,5 +43,5 @@ public abstract class AbstractReadItLaterIntentHandler implements RequestHandler
     }
   }
 
-  abstract Optional<Response> handle(SessionManager session) throws Exception;
+  abstract Optional<Response> handle(HandlerInput put, ReadItLaterSession session) throws Exception;
 }

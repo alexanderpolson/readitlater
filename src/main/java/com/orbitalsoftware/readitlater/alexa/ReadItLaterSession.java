@@ -1,6 +1,6 @@
 package com.orbitalsoftware.readitlater.alexa;
 
-import com.amazon.ask.dispatcher.request.handler.HandlerInput;
+import com.amazon.ask.attributes.AttributesManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -27,13 +27,10 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 
 @Slf4j
-public class SessionManager {
-
-  private static final String PROMPT_FORMAT =
-      "The next story in your queue is entitled \"%s\" and their %s remaining. What would you like to do?";
+public class ReadItLaterSession {
   private static final Integer GET_BOOKMARKS_LIMIT = 100;
 
-  @Getter private final HandlerInput input;
+  @Getter private final AttributesManager attributesManager;
   private final ObjectMapper mapper;
   private InstapaperService instapaperService;
 
@@ -44,9 +41,10 @@ public class SessionManager {
   private Optional<Article> currentArticle = Optional.empty();
   private ArticleFactory articleFactory;
 
-  public SessionManager(@NonNull InstapaperService instapaperService, @NonNull HandlerInput input)
+  public ReadItLaterSession(
+      @NonNull InstapaperService instapaperService, @NonNull AttributesManager attributesManager)
       throws Exception {
-    this.input = input;
+    this.attributesManager = attributesManager;
     this.mapper = new ObjectMapper();
     this.mapper.registerModule(new Jdk8Module());
     articleFactory = new ArticleFactory();
@@ -100,7 +98,7 @@ public class SessionManager {
     if (currentArticle.isPresent()) {
       String articleJson = mapper.writeValueAsString(currentArticle.get());
       log.info("Writing article JSON to session: {}", articleJson);
-      input.getAttributesManager().getSessionAttributes().put(KEY_CURRENT_ARTICLE, articleJson);
+      attributesManager.getSessionAttributes().put(KEY_CURRENT_ARTICLE, articleJson);
       saveCustomerState();
     }
   }
@@ -112,8 +110,7 @@ public class SessionManager {
 
   private void loadCustomerState() throws Exception {
     // Persisted Attributes
-    Map<String, Object> persistedAttributes =
-        input.getAttributesManager().getPersistentAttributes();
+    Map<String, Object> persistedAttributes = attributesManager.getPersistentAttributes();
     log.info("Persisted attributes: {}", persistedAttributes);
     String rawCustomerState = (String) persistedAttributes.get(KEY_ARTICLES_TO_SKIP);
     if (rawCustomerState == null) {
@@ -130,8 +127,7 @@ public class SessionManager {
 
     // Session attributes
     Map<String, Object> sessionAttributes =
-        Optional.ofNullable(input.getAttributesManager().getSessionAttributes())
-            .orElse(new HashMap<>());
+        Optional.ofNullable(attributesManager.getSessionAttributes()).orElse(new HashMap<>());
     String articleJson = (String) sessionAttributes.get(KEY_CURRENT_ARTICLE);
     if (articleJson != null) {
       this.currentArticle =
@@ -145,16 +141,8 @@ public class SessionManager {
   private void saveCustomerState() throws IOException {
     Map<String, Object> persistedAttributes = new HashMap<>();
     persistedAttributes.put(KEY_ARTICLES_TO_SKIP, mapper.writeValueAsString(articlesToSkip));
-    input.getAttributesManager().setPersistentAttributes(persistedAttributes);
-    input.getAttributesManager().savePersistentAttributes();
-  }
-
-  private Optional<Bookmark> bookmarkFromJson(String json) {
-    try {
-      return Optional.of(mapper.readValue(json, Bookmark.class));
-    } catch (IOException e) {
-      return Optional.empty();
-    }
+    attributesManager.setPersistentAttributes(persistedAttributes);
+    attributesManager.savePersistentAttributes();
   }
 
   private void clearCurrentArticle() {
@@ -247,27 +235,6 @@ public class SessionManager {
       log.info("No bookmarks found.");
       return Optional.empty();
     }
-  }
-
-  public Optional<String> getNextStoryTitle() {
-    return currentArticle.map(
-        a -> StringEscapeUtils.unescapeXml(Jsoup.parse(a.getBookmark().getTitle()).text()));
-  }
-
-  public Optional<String> getNextStoryPrompt() {
-    log.info("Creating prompt for article: {}", currentArticle);
-    return currentArticle.map(
-        (article) -> {
-          // TODO: This + 1 is a hack due to the relationship between page number and when it
-          // needs to be incremented.
-          int pagesLeft = article.numPagesLeft() + 1;
-          // TO handle correct grammar with respect to single page vs. multiple pages.
-          String pagesLeftDescription =
-              String.format(
-                  "%s %d %s",
-                  pagesLeft == 1 ? "is" : "are", pagesLeft, pagesLeft == 1 ? "page" : "pages");
-          return String.format(PROMPT_FORMAT, getNextStoryTitle().get(), pagesLeftDescription);
-        });
   }
 
   // TODO: Add star, archive, or delete question at the end.

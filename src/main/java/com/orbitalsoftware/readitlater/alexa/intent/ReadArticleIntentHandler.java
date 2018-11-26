@@ -5,8 +5,9 @@ import static com.amazon.ask.request.Predicates.intentName;
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
 import com.orbitalsoftware.readitlater.alexa.Article;
-import com.orbitalsoftware.readitlater.alexa.SessionManager;
+import com.orbitalsoftware.readitlater.alexa.ReadItLaterSession;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -36,7 +37,8 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
   }
 
   @Override
-  Optional<Response> handle(SessionManager session) throws Exception {
+  Optional<Response> handle(@NonNull HandlerInput input, @NonNull ReadItLaterSession session)
+      throws Exception {
     String speechText = NO_ARTICLES;
     String repromptText = NO_ARTICLES;
     String cardTitle = DEFAULT_CARD_TITLE;
@@ -52,7 +54,9 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
           article.numPages(),
           article.numPagesLeft());
       final String articleText = session.getArticleTextPrompt().get();
-      cardTitle = StringEscapeUtils.unescapeXml(session.getNextStoryTitle().get());
+      // TODO: This needs to be generalized.
+      String title = session.getCurrentArticle().get().getBookmark().getTitle();
+      cardTitle = StringEscapeUtils.unescapeXml(title);
 
       if (article.isLastPage()) {
         repromptText = END_OF_ARTICLE;
@@ -70,8 +74,7 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
       speechText = String.join(SPEECH_DELIMETER, articleText, repromptText);
     }
     final String cardText = StringEscapeUtils.unescapeXml(speechText);
-    return session
-        .getInput()
+    return input
         .getResponseBuilder()
         .withSpeech(speechText)
         .withSimpleCard(cardTitle, cardText)
