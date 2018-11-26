@@ -4,6 +4,7 @@ import static com.amazon.ask.request.Predicates.intentName;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
+import com.orbitalsoftware.instapaper.Instapaper;
 import com.orbitalsoftware.readitlater.alexa.Article;
 import com.orbitalsoftware.readitlater.alexa.ReadItLaterSession;
 import java.util.Optional;
@@ -22,6 +23,10 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
       "That's the end of page %d. There %s left. Would you like to continue reading?";
   private static final String END_OF_ARTICLE =
       "That's the end of the article. Would you like to archive, star, delete, or skip the article?";
+
+  public ReadArticleIntentHandler(@NonNull Instapaper instapaper) {
+    super(instapaper);
+  }
 
   @Override
   public boolean canHandle(HandlerInput handlerInput) {

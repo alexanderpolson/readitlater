@@ -3,18 +3,19 @@ package com.orbitalsoftware.readitlater.alexa.intent;
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
 import com.amazon.ask.request.Predicates;
+import com.orbitalsoftware.instapaper.Instapaper;
+import com.orbitalsoftware.readitlater.alexa.Article;
 import com.orbitalsoftware.readitlater.alexa.ReadItLaterSession;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.Data;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 
 @Slf4j
-@Data
 public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterIntentHandler {
 
   protected static final String DEFAULT_CARD_TITLE = "Read It Later";
@@ -26,14 +27,25 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
 
   private final String intentName;
 
+  protected GetNextArticleIntentHandler(
+      @NonNull Instapaper instapaper, @NonNull String intentName) {
+    super(instapaper);
+    this.intentName = intentName;
+  }
+
   @Override
   public boolean canHandle(HandlerInput input) {
-    return input.matches(Predicates.intentName(getIntentName()));
+    return input.matches(Predicates.intentName(intentName));
   }
 
   @Override
   Optional<Response> handle(HandlerInput input, ReadItLaterSession session) throws Exception {
+    Optional<Article> currentArtcile = session.getCurrentArticle();
+    if (!currentArtcile.isPresent()) {
+      throw new IllegalStateException("There are currently no articles available.");
+    }
     Optional<String> executedActionPrompt = executeRequestedAction(session);
+    session.setNextArticle();
     Optional<String> nextStoryPrompt = getNextStoryPrompt(session);
 
     String speechText =
@@ -49,6 +61,8 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
         .withShouldEndSession(!nextStoryPrompt.isPresent())
         .build();
   }
+
+  private void throwIfNoCurrentArticle() {}
 
   private Optional<String> getNextStoryPrompt(ReadItLaterSession session) {
     return session

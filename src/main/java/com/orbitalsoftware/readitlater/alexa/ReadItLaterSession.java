@@ -4,14 +4,11 @@ import com.amazon.ask.attributes.AttributesManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.orbitalsoftware.instapaper.ArchiveBookmarkRequest;
 import com.orbitalsoftware.instapaper.Bookmark;
 import com.orbitalsoftware.instapaper.BookmarkId;
 import com.orbitalsoftware.instapaper.BookmarksListRequest;
 import com.orbitalsoftware.instapaper.BookmarksListResponse;
-import com.orbitalsoftware.instapaper.DeleteBookmarkRequest;
-import com.orbitalsoftware.instapaper.InstapaperService;
-import com.orbitalsoftware.instapaper.StarBookmarkRequest;
+import com.orbitalsoftware.instapaper.Instapaper;
 import com.orbitalsoftware.instapaper.UpdateReadProgressRequest;
 import java.io.IOException;
 import java.util.HashMap;
@@ -32,7 +29,7 @@ public class ReadItLaterSession {
 
   @Getter private final AttributesManager attributesManager;
   private final ObjectMapper mapper;
-  private InstapaperService instapaperService;
+  private Instapaper instapaperService;
 
   private static final String KEY_ARTICLES_TO_SKIP = "ArticlesToSkip";
   private static final String KEY_CURRENT_ARTICLE = "CurrentArticle";
@@ -42,7 +39,7 @@ public class ReadItLaterSession {
   private ArticleFactory articleFactory;
 
   public ReadItLaterSession(
-      @NonNull InstapaperService instapaperService, @NonNull AttributesManager attributesManager)
+      @NonNull Instapaper instapaperService, @NonNull AttributesManager attributesManager)
       throws Exception {
     this.attributesManager = attributesManager;
     this.mapper = new ObjectMapper();
@@ -103,7 +100,8 @@ public class ReadItLaterSession {
     }
   }
 
-  private void setNextArticle() throws Exception {
+  // TODO: This shouldn't be public
+  public void setNextArticle() throws Exception {
     currentArticle = getNextArticle();
     saveSessionState();
   }
@@ -143,46 +141,6 @@ public class ReadItLaterSession {
     persistedAttributes.put(KEY_ARTICLES_TO_SKIP, mapper.writeValueAsString(articlesToSkip));
     attributesManager.setPersistentAttributes(persistedAttributes);
     attributesManager.savePersistentAttributes();
-  }
-
-  private void clearCurrentArticle() {
-    currentArticle = Optional.empty();
-  }
-
-  private void throwIfNoCurrentArticle() {
-    if (!currentArticle.isPresent()) {
-      throw new IllegalStateException("There are currently no articles available.");
-    }
-  }
-
-  public void deleteCurrentArticle() throws Exception {
-    throwIfNoCurrentArticle();
-    instapaperService.deleteBookmark(
-        DeleteBookmarkRequest.builder()
-            .bookmarkId(currentArticle.get().getBookmark().getBookmarkId().getId())
-            .build());
-    clearCurrentArticle();
-    setNextArticle();
-  }
-
-  public void archiveCurrentArticle() throws Exception {
-    throwIfNoCurrentArticle();
-    instapaperService.archiveBookmark(
-        ArchiveBookmarkRequest.builder()
-            .bookmarkId(currentArticle.get().getBookmark().getBookmarkId().getId())
-            .build());
-    clearCurrentArticle();
-    setNextArticle();
-  }
-
-  public void starCurrentArticle() throws Exception {
-    throwIfNoCurrentArticle();
-    instapaperService.starBookmark(
-        StarBookmarkRequest.builder()
-            .bookmarkId(currentArticle.get().getBookmark().getBookmarkId().getId())
-            .build());
-    // Also archive it so we move to the next article.
-    archiveCurrentArticle();
   }
 
   private void removeDeletedBookmarks(List<BookmarkId> deletedBookmarks) throws IOException {
