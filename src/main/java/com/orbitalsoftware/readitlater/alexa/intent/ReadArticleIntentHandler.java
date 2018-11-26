@@ -5,8 +5,8 @@ import static com.amazon.ask.request.Predicates.intentName;
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
 import com.orbitalsoftware.instapaper.Instapaper;
-import com.orbitalsoftware.readitlater.alexa.Article;
 import com.orbitalsoftware.readitlater.alexa.ReadItLaterSession;
+import com.orbitalsoftware.readitlater.alexa.article.Article;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -24,13 +24,20 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
   private static final String END_OF_ARTICLE =
       "That's the end of the article. Would you like to archive, star, delete, or skip the article?";
 
+  private final String intentName;
+
   public ReadArticleIntentHandler(@NonNull Instapaper instapaper) {
+    this(instapaper, INTENT_NAME);
+  }
+
+  protected ReadArticleIntentHandler(@NonNull Instapaper instapaper, @NonNull String intentName) {
     super(instapaper);
+    this.intentName = intentName;
   }
 
   @Override
   public boolean canHandle(HandlerInput handlerInput) {
-    return handlerInput.matches(intentName(INTENT_NAME));
+    return handlerInput.matches(intentName(intentName));
   }
 
   private String pagesLeftDescription(int pagesLeft) {
@@ -71,10 +78,6 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
                 CONTINUE_PROMPT,
                 article.getCurrentPage(),
                 pagesLeftDescription(article.numPagesLeft()));
-
-        // TODO: The problem with this is that it updates reading progress a bit prematurely. This
-        // also means the summary at the beginning is one page shy of truth.
-        session.incrementArticlePage();
       }
       speechText = String.join(SPEECH_DELIMETER, articleText, repromptText);
     }

@@ -11,6 +11,7 @@ import com.orbitalsoftware.readitlater.alexa.intent.CancelAndStopIntentHandler;
 import com.orbitalsoftware.readitlater.alexa.intent.DeleteArticleIntentHandler;
 import com.orbitalsoftware.readitlater.alexa.intent.HelpIntentHandler;
 import com.orbitalsoftware.readitlater.alexa.intent.LaunchIntentHandler;
+import com.orbitalsoftware.readitlater.alexa.intent.NextPageIntentHandler;
 import com.orbitalsoftware.readitlater.alexa.intent.ReadArticleIntentHandler;
 import com.orbitalsoftware.readitlater.alexa.intent.SkipArticleIntentHandler;
 import com.orbitalsoftware.readitlater.alexa.intent.StarArticleIntentHandler;
@@ -41,6 +42,7 @@ public class ReadItLaterSkillFactory {
             new DeleteArticleIntentHandler(instapaper),
             new SkipArticleIntentHandler(instapaper),
             new StarArticleIntentHandler(instapaper),
+            new NextPageIntentHandler(instapaper),
             new ReadArticleIntentHandler(instapaper),
             new CancelAndStopIntentHandler(),
             new HelpIntentHandler(),
