@@ -79,7 +79,10 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
                 article.getCurrentPage(),
                 pagesLeftDescription(article.numPagesLeft()));
       }
-      speechText = String.join(SPEECH_DELIMETER, articleText, repromptText);
+      // This may break cases where entities are already escaped.
+      // TODO: Figure out a way to detect if text is already escaped and only escape if necessary.
+      speechText =
+          StringEscapeUtils.escapeXml11(String.join(SPEECH_DELIMETER, articleText, repromptText));
     }
     final String cardText = StringEscapeUtils.unescapeXml(speechText);
     return input
