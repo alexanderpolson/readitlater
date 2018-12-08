@@ -1,0 +1,25 @@
+{
+  "configuration": {
+    "name": "Default",
+    "appenders": {
+      "Console": {
+        "name": "STDOUT",
+        "PatternLayout": {
+          "alwaysWriteExceptions": true,
+          "pattern": "%d{ISO8601} [%p] %m %ex%n"
+        },
+        "ThresholdFilter": {
+          "level": "debug"
+        }
+      }
+    },
+    "loggers": {
+      "root": {
+        "level": "debug",
+        "AppenderRef": {
+          "ref": "STDOUT"
+        }
+      }
+    }
+  }
+}

@@ -9,7 +9,9 @@ import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 public abstract class AbstractReadItLaterIntentHandler implements RequestHandler {
 
@@ -25,7 +27,7 @@ public abstract class AbstractReadItLaterIntentHandler implements RequestHandler
     try {
       ReadItLaterSession session = new ReadItLaterSession(instapaper, input.getAttributesManager());
       Optional<Response> response = handle(input, session);
-      System.err.printf("About to send response: %s%n", response.get());
+      log.info("About to send response: {}", response.get());
       return response;
     } catch (Exception e) {
       // Wrap whatever exception was received in a RuntimeException and let the ExceptionHandler

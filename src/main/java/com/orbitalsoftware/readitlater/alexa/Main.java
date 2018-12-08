@@ -22,9 +22,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 
+@Log4j2
 public class Main {
 
   private static final String AUTH_TOKEN_PROPERTIES_PATH = "/Users/apolson/.instapaper_auth_token";
@@ -47,7 +49,7 @@ public class Main {
   }
 
   private void run() throws Exception {
-    //        System.out.println(instapaperService.verifyCredentials(authToken));
+    //        log.info(instapaperService.verifyCredentials(authToken));
     //    updateReadProgress();
     storyText();
     //        archive();
@@ -78,7 +80,7 @@ public class Main {
     try {
       String bookmarkText = instapaper.getBookmarkText(bookmarkId.getId());
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("An error occurred while trying to get bookmark text.", e);
     }
   }
 
@@ -91,9 +93,9 @@ public class Main {
     String fullText = instapaper.getBookmarkText(BOOKMARK_ID);
     String filteredText = Jsoup.parse(fullText).text();
     List<String> pages = ArticleTextPaginator.paginateText(filteredText, 800);
-    //    System.out.println(pages.stream().collect(Collectors.joining("\n")));
+    //    log.info(pages.stream().collect(Collectors.joining("\n")));
 
-    System.out.println(StringEscapeUtils.escapeXml11(pages.get(3)));
+    log.info(StringEscapeUtils.escapeXml11(pages.get(3)));
   }
 
   private void bookmarkParsing() throws Exception {
@@ -111,7 +113,7 @@ public class Main {
     BookmarksListRequest request =
         BookmarksListRequest.builder().have(Optional.of(haveBookmarks)).build();
     BookmarksListResponse response = instapaper.getBookmarks(request);
-    //    System.out.println(response);
+    //    log.info(response);
     //    request =
     //        BookmarksListRequest.builder()
     //            .have(
@@ -119,21 +121,21 @@ public class Main {
     // - 2)))
     //            .build();
     //    response = instapaperService.getBookmarks(authToken, request);
-    System.out.println(response.getBookmarks().stream().findFirst());
-    System.out.println(response.getDeletedIds());
+    log.info(response.getBookmarks().stream().findFirst().toString());
+    log.info(response.getDeletedIds().toString());
   }
 
   private void archive() throws Exception {
     ArchiveBookmarkRequest request =
         ArchiveBookmarkRequest.builder().bookmarkId(BOOKMARK_ID).build();
-    System.err.printf("Archived bookmark: %s%n", instapaper.archiveBookmark(request));
+    log.info("Archived bookmark: {}", instapaper.archiveBookmark(request));
     getBookmarks();
   }
 
   private void unarchive() throws Exception {
     UnarchiveBookmarkRequest request =
         UnarchiveBookmarkRequest.builder().bookmarkId(BOOKMARK_ID).build();
-    System.err.printf("Unarchived bookmark: %s%n", instapaper.unarchiveBookmark(request));
+    log.error("Unarchived bookmark: {}", instapaper.unarchiveBookmark(request));
     getBookmarks();
   }
 

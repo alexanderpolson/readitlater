@@ -15,7 +15,9 @@ import com.orbitalsoftware.oauth.AuthToken;
 import com.orbitalsoftware.oauth.OAuthCredentialsProvider;
 import com.orbitalsoftware.retry.RetryStrategy;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class InstapaperServiceWithRetryStrategies extends InstapaperService {
 
   private static final int DEFAULT_MAX_TRIES = 4;
@@ -39,18 +41,15 @@ public class InstapaperServiceWithRetryStrategies extends InstapaperService {
             .timeOutTime(DEFAULT_TIMEOUT_TIME_MSEC)
             .onTimeout(
                 (time, unit) -> {
-                  System.err.printf(
-                      "Timed out after %d msec waiting for a response.\n",
-                      DEFAULT_TIMEOUT_TIME_MSEC);
+                  log.error(
+                      "Timed out after %d msec waiting for a response.", DEFAULT_TIMEOUT_TIME_MSEC);
                 })
             .onFailure(
                 (tryNum, e) -> {
-                  System.err.printf("Failed getting a response after try #%d.", tryNum);
-                  e.printStackTrace();
+                  log.error("Failed getting a response after try #{}.", tryNum, e);
                 })
             .onGiveUp(
-                (maxTries) ->
-                    System.err.printf("Giving up getting a response after %d tries.", maxTries))
+                (maxTries) -> log.error("Giving up getting a response after {} tries.", maxTries))
             .build();
     updateReadProgressRetryStrategy =
         RetryStrategy.builder()
@@ -58,20 +57,21 @@ public class InstapaperServiceWithRetryStrategies extends InstapaperService {
             .timeOutTime(UPDATE_READ_PROGRESS_TIMEOUT_TIME_MSEC)
             .onTimeout(
                 (time, unit) -> {
-                  System.err.printf(
-                      "Timed out after %d msec waiting for a response from updateReadProgress.\n",
+                  log.error(
+                      "Timed out after {} msec waiting for a response from updateReadProgress.",
                       DEFAULT_TIMEOUT_TIME_MSEC);
                 })
             .onFailure(
                 (tryNum, e) -> {
-                  System.err.printf(
-                      "Failed getting a response from updateReadProgress after try #%d.", tryNum);
-                  e.printStackTrace();
+                  log.error(
+                      "Failed getting a response from updateReadProgress after try #{}.",
+                      tryNum,
+                      e);
                 })
             .onGiveUp(
                 (maxTries) ->
-                    System.err.printf(
-                        "Giving up getting a response from updateReadProgress after %d tries.",
+                    log.error(
+                        "Giving up getting a response from updateReadProgress after {} tries.",
                         maxTries))
             .build();
   }

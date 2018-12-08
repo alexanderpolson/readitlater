@@ -3,9 +3,9 @@ package com.orbitalsoftware.readitlater.alexa.article;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 
-@Slf4j
+@Log4j2
 public class ArticleTextPaginator {
 
   private static final int CHARACTER_LIMIT = 1000;
