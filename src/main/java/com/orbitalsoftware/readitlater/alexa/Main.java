@@ -3,6 +3,7 @@ package com.orbitalsoftware.readitlater.alexa;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orbitalsoftware.harvest.ExecutionTimer;
+import com.orbitalsoftware.harvest.annotations.Timed;
 import com.orbitalsoftware.instapaper.ArchiveBookmarkRequest;
 import com.orbitalsoftware.instapaper.BookmarkId;
 import com.orbitalsoftware.instapaper.BookmarksListRequest;
@@ -38,6 +39,10 @@ public class Main {
 
   private final Instapaper instapaper;
 
+  public static final void main(final String[] args) throws Exception {
+    new Main().aspectTest();
+  }
+
   public Main() throws Exception {
 
     OAuthCredentialsProvider OAuthCredentialsProvider =
@@ -51,13 +56,17 @@ public class Main {
   private void run() throws Exception {
     //        log.info(instapaperService.verifyCredentials(authToken));
     //    updateReadProgress();
-    storyText();
+    //    storyText();
+    aspectTest();
     //        archive();
     //        unarchive();
     //    getBookmarks();
     //        bookmarkParsing();
     //    timeCalls();
   }
+
+  @Timed
+  public void aspectTest() {}
 
   private void timeCalls() throws Exception {
     BookmarksListRequest request = BookmarksListRequest.builder().build();
@@ -89,7 +98,8 @@ public class Main {
         UpdateReadProgressRequest.builder().bookmarkId(BOOKMARK_ID).progress(0.0).build());
   }
 
-  private void storyText() throws Exception {
+  @Timed
+  protected void storyText() throws Exception {
     String fullText = instapaper.getBookmarkText(BOOKMARK_ID);
     String filteredText = Jsoup.parse(fullText).text();
     List<String> pages = ArticleTextPaginator.paginateText(filteredText, 800);
@@ -141,9 +151,5 @@ public class Main {
 
   private boolean isBlank(String str) {
     return str == null || str.equals("");
-  }
-
-  public static final void main(String[] args) throws Exception {
-    new Main().run();
   }
 }
