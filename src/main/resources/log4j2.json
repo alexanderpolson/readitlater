@@ -6,7 +6,7 @@
         "name": "STDOUT",
         "PatternLayout": {
           "alwaysWriteExceptions": true,
-          "pattern": "%d{ISO8601} [%p] %m %ex%n"
+          "pattern": "%d{ISO8601} [%p] (%c) %m %ex%n"
         },
         "ThresholdFilter": {
           "level": "debug"
