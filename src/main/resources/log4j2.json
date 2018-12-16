@@ -2,8 +2,9 @@
   "configuration": {
     "name": "Default",
     "appenders": {
-      "Console": {
-        "name": "STDOUT",
+      "File": {
+        "name": "File",
+        "fileName": "/var/log/tomcat8/readitlater.log",
         "PatternLayout": {
           "alwaysWriteExceptions": true,
           "pattern": "%d{ISO8601} [%p] (%c) %m %ex%n"
@@ -17,7 +18,7 @@
       "root": {
         "level": "debug",
         "AppenderRef": {
-          "ref": "STDOUT"
+          "ref": "File"
         }
       }
     }
