@@ -40,7 +40,8 @@ public class Main {
   private final Instapaper instapaper;
 
   public static final void main(final String[] args) throws Exception {
-    new Main().aspectTest();
+    log.info("Starting Main.");
+    new Main().run();
   }
 
   public Main() throws Exception {
@@ -56,8 +57,8 @@ public class Main {
   private void run() throws Exception {
     //        log.info(instapaperService.verifyCredentials(authToken));
     //    updateReadProgress();
-    //    storyText();
-    aspectTest();
+    storyText();
+    //    aspectTest();
     //        archive();
     //        unarchive();
     //    getBookmarks();
