@@ -2,23 +2,47 @@
   "configuration": {
     "name": "Default",
     "appenders": {
-      "File": {
-        "name": "File",
-        "fileName": "/var/log/tomcat8/readitlater.log",
-        "PatternLayout": {
-          "alwaysWriteExceptions": true,
-          "pattern": "%d{ISO8601} [%p] (%c) %m %ex%n"
+      "appender": [
+        {
+          "type": "File",
+          "name": "Harvest",
+          "fileName": "/var/log/tomcat8/readitlater.harvest.metrics.log",
+          "PatternLayout": {
+            "alwaysWriteExceptions": true,
+            "pattern": "%d{ISO8601} %m %ex%n"
+          },
+          "ThresholdFilter": {
+            "level": "debug"
+          }
         },
-        "ThresholdFilter": {
-          "level": "debug"
+        {
+          "type": "File",
+          "name": "ReadItLater",
+          "fileName": "/var/log/tomcat8/readitlater.log",
+          "PatternLayout": {
+            "alwaysWriteExceptions": true,
+            "pattern": "%d{ISO8601} [%p] (%c) %m %ex%n"
+          },
+          "ThresholdFilter": {
+            "level": "debug"
+          }
         }
-      }
+      ]
     },
     "loggers": {
+      "logger": [
+        {
+          "name": "com.orbitalsoftware.harvest.Harvest",
+          "level": "debug",
+          "AppenderRef": {
+            "ref": "Harvest"
+          }
+        }
+      ],
       "root": {
         "level": "debug",
         "AppenderRef": {
-          "ref": "File"
+          "ref": "ReadItLater"
         }
       }
     }

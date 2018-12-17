@@ -3,7 +3,6 @@ package com.orbitalsoftware.readitlater.alexa;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orbitalsoftware.harvest.ExecutionTimer;
-import com.orbitalsoftware.harvest.annotations.Timed;
 import com.orbitalsoftware.instapaper.ArchiveBookmarkRequest;
 import com.orbitalsoftware.instapaper.BookmarkId;
 import com.orbitalsoftware.instapaper.BookmarksListRequest;
@@ -66,9 +65,6 @@ public class Main {
     //    timeCalls();
   }
 
-  @Timed
-  public void aspectTest() {}
-
   private void timeCalls() throws Exception {
     BookmarksListRequest request = BookmarksListRequest.builder().build();
     BookmarksListResponse response = instapaper.getBookmarks(request);
@@ -99,7 +95,6 @@ public class Main {
         UpdateReadProgressRequest.builder().bookmarkId(BOOKMARK_ID).progress(0.0).build());
   }
 
-  @Timed
   protected void storyText() throws Exception {
     String fullText = instapaper.getBookmarkText(BOOKMARK_ID);
     String filteredText = Jsoup.parse(fullText).text();
