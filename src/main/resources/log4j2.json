@@ -6,7 +6,7 @@
         {
           "type": "File",
           "name": "Harvest",
-          "fileName": "/var/log/tomcat8/readitlater.harvest.metrics.log",
+          "fileName": "/var/log/tomcat8/readitlater.metrics.log",
           "PatternLayout": {
             "alwaysWriteExceptions": true,
             "pattern": "%d{ISO8601} %m %ex%n"
