@@ -5,6 +5,7 @@ import static com.amazon.ask.request.Predicates.intentName;
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.dispatcher.request.handler.RequestHandler;
 import com.amazon.ask.model.Response;
+import com.orbitalsoftware.harvest.annotations.Timed;
 import java.util.Optional;
 
 public class HelpIntentHandler implements RequestHandler {
@@ -16,6 +17,7 @@ public class HelpIntentHandler implements RequestHandler {
     return input.matches(intentName("AMAZON.HelpIntent"));
   }
 
+  @Timed
   @Override
   public Optional<Response> handle(HandlerInput input) {
     return input

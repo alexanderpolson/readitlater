@@ -3,6 +3,7 @@ package com.orbitalsoftware.readitlater.alexa.intent;
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
 import com.amazon.ask.request.Predicates;
+import com.orbitalsoftware.harvest.annotations.Timed;
 import com.orbitalsoftware.instapaper.Instapaper;
 import com.orbitalsoftware.readitlater.alexa.ReadItLaterSession;
 import com.orbitalsoftware.readitlater.alexa.article.Article;
@@ -38,6 +39,7 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
     return input.matches(Predicates.intentName(intentName));
   }
 
+  @Timed
   @Override
   Optional<Response> handle(HandlerInput input, ReadItLaterSession session) throws Exception {
     Optional<Article> currentArtcile = session.getCurrentArticle();

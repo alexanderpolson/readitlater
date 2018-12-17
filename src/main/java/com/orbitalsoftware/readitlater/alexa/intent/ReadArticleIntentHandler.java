@@ -4,6 +4,7 @@ import static com.amazon.ask.request.Predicates.intentName;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
+import com.orbitalsoftware.harvest.annotations.Timed;
 import com.orbitalsoftware.instapaper.Instapaper;
 import com.orbitalsoftware.readitlater.alexa.ReadItLaterSession;
 import com.orbitalsoftware.readitlater.alexa.article.Article;
@@ -48,6 +49,7 @@ public class ReadArticleIntentHandler extends AbstractReadItLaterIntentHandler {
     }
   }
 
+  @Timed
   @Override
   Optional<Response> handle(@NonNull HandlerInput input, @NonNull ReadItLaterSession session)
       throws Exception {
