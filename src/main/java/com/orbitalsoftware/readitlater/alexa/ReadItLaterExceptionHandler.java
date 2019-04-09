@@ -4,9 +4,9 @@ import com.amazon.ask.dispatcher.exception.ExceptionHandler;
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 
-@Slf4j
+@Log4j2
 public class ReadItLaterExceptionHandler implements ExceptionHandler {
 
   private static final String ERROR_MSG = "An error has occurred. Please try again later...";

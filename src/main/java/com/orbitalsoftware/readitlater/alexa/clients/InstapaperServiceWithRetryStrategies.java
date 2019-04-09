@@ -1,5 +1,6 @@
 package com.orbitalsoftware.readitlater.alexa.clients;
 
+import com.orbitalsoftware.harvest.annotations.Counted;
 import com.orbitalsoftware.instapaper.ArchiveBookmarkRequest;
 import com.orbitalsoftware.instapaper.ArchiveBookmarkResponse;
 import com.orbitalsoftware.instapaper.Bookmark;
@@ -14,6 +15,7 @@ import com.orbitalsoftware.instapaper.auth.InstapaperAuthTokenProvider;
 import com.orbitalsoftware.oauth.AuthToken;
 import com.orbitalsoftware.oauth.OAuthCredentialsProvider;
 import com.orbitalsoftware.retry.RetryStrategy;
+import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,25 +57,27 @@ public class InstapaperServiceWithRetryStrategies extends InstapaperService {
         RetryStrategy.builder()
             .maxNumTries(UPDATE_READ_PROGRESS_MAX_TRIES)
             .timeOutTime(UPDATE_READ_PROGRESS_TIMEOUT_TIME_MSEC)
-            .onTimeout(
-                (time, unit) -> {
-                  log.error(
-                      "Timed out after {} msec waiting for a response from updateReadProgress.",
-                      DEFAULT_TIMEOUT_TIME_MSEC);
-                })
-            .onFailure(
-                (tryNum, e) -> {
-                  log.error(
-                      "Failed getting a response from updateReadProgress after try #{}.",
-                      tryNum,
-                      e);
-                })
-            .onGiveUp(
-                (maxTries) ->
-                    log.error(
-                        "Giving up getting a response from updateReadProgress after {} tries.",
-                        maxTries))
+            .onTimeout(this::onTimeout)
+            .onFailure(this::onFailure)
+            .onGiveUp(this::onGiveUp)
             .build();
+  }
+
+  @Counted
+  private void onTimeout(long time, TimeUnit unit) {
+    log.error(
+        "Timed out after {} msec waiting for a response from updateReadProgress.",
+        DEFAULT_TIMEOUT_TIME_MSEC);
+  }
+
+  @Counted
+  private void onFailure(int tryNum, Throwable e) {
+    log.error("Failed getting a response from updateReadProgress after try #{}.", tryNum, e);
+  }
+
+  @Counted
+  private void onGiveUp(int maxTries) {
+    log.error("Giving up getting a response from updateReadProgress after {} tries.", maxTries);
   }
 
   @Override
