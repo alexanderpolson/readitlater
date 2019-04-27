@@ -44,7 +44,7 @@ public class InstapaperServiceWithRetryStrategies extends InstapaperService {
             .onTimeout(
                 (time, unit) -> {
                   log.error(
-                      "Timed out after %d msec waiting for a response.", DEFAULT_TIMEOUT_TIME_MSEC);
+                      "Timed out after {} msec waiting for a response.", DEFAULT_TIMEOUT_TIME_MSEC);
                 })
             .onFailure(
                 (tryNum, e) -> {
