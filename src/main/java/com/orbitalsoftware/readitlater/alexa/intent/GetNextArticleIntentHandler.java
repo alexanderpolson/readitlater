@@ -81,7 +81,7 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
                       "%s %d %s",
                       pagesLeft == 1 ? "is" : "are", pagesLeft, pagesLeft == 1 ? "page" : "pages");
               String title =
-                  StringEscapeUtils.unescapeXml(
+                  StringEscapeUtils.escapeXml11(
                       Jsoup.parse(article.getBookmark().getTitle()).text());
               return String.format(PROMPT_FORMAT, title, pagesLeftDescription);
             });
