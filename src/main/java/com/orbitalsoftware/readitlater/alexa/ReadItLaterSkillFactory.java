@@ -4,7 +4,7 @@ import com.amazon.ask.Skill;
 import com.amazon.ask.Skills;
 import com.orbitalsoftware.instapaper.Instapaper;
 import com.orbitalsoftware.instapaper.auth.PropertiesInstapaperAuthTokenProvider;
-import com.orbitalsoftware.oauth.SystemPropertyOAuthCredentialsProvider;
+import com.orbitalsoftware.oauth.OAuthCredentialsProvider;
 import com.orbitalsoftware.readitlater.alexa.clients.InstapaperServiceWithRetryStrategies;
 import com.orbitalsoftware.readitlater.alexa.intent.ArchiveArticleIntentHandler;
 import com.orbitalsoftware.readitlater.alexa.intent.CancelAndStopIntentHandler;
@@ -22,7 +22,8 @@ public class ReadItLaterSkillFactory {
   private static final String STATE_TABLE_NAME = "ReadItLaterState";
   private static final String AUTH_TOKEN_RESOURCE = "instapaper_auth.token";
 
-  public static Skill createInstance() throws Exception {
+  public static Skill createInstance(final OAuthCredentialsProvider credentialsProvider)
+      throws Exception {
     // TODO: Instantiate these via Spring.
     InputStream inputStream =
         PropertiesInstapaperAuthTokenProvider.class
@@ -30,8 +31,7 @@ public class ReadItLaterSkillFactory {
             .getResourceAsStream(AUTH_TOKEN_RESOURCE);
     Instapaper instapaper =
         new InstapaperServiceWithRetryStrategies(
-            new SystemPropertyOAuthCredentialsProvider(),
-            new PropertiesInstapaperAuthTokenProvider(inputStream));
+            credentialsProvider, new PropertiesInstapaperAuthTokenProvider(inputStream));
     return Skills.standard()
         .withTableName(STATE_TABLE_NAME)
         .withAutoCreateTable(true)
