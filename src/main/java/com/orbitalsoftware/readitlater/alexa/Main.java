@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orbitalsoftware.harvest.ExecutionTimer;
 import com.orbitalsoftware.instapaper.ArchiveBookmarkRequest;
+import com.orbitalsoftware.instapaper.Bookmark;
 import com.orbitalsoftware.instapaper.BookmarkId;
 import com.orbitalsoftware.instapaper.BookmarksListRequest;
 import com.orbitalsoftware.instapaper.BookmarksListResponse;
@@ -33,7 +34,7 @@ public class Main {
   private static final String O_AUTH_CREDENTIALS_PROPERTIES_PATH =
       "/Users/apolson/.instapaper_oauth_credentials";
 
-  private static final Integer BOOKMARK_ID = 985807278;
+  private static final Integer BOOKMARK_ID = 1096290739;
   private static final Integer DELETED_ID = 1079451394;
 
   private final Instapaper instapaper;
@@ -56,13 +57,15 @@ public class Main {
   private void run() throws Exception {
     //        log.info(instapaperService.verifyCredentials(authToken));
     //    updateReadProgress();
-    storyText();
-    //    aspectTest();
-    //        archive();
-    //        unarchive();
-    //    getBookmarks();
-    //        bookmarkParsing();
-    //    timeCalls();
+    //    superLongStory();
+    final List<Bookmark> bookmarks = getBookmarks();
+    int characterCount = 0;
+    for (final Bookmark bookmark : bookmarks) {
+      characterCount += storyText(bookmark.getBookmarkId().getId()).length();
+    }
+
+    System.err.printf(
+        "%d articles representing %d characters.%n", bookmarks.size(), characterCount);
   }
 
   private void timeCalls() throws Exception {
@@ -72,9 +75,7 @@ public class Main {
     //    BookmarkId bookmarkId = BookmarkId.builder().id(1117369971).build();
 
     for (int passNum = 1; passNum <= 100; passNum++) {
-      response
-          .getBookmarks()
-          .stream()
+      response.getBookmarks().stream()
           .forEach((bookmark) -> getBookmarkText(bookmark.getBookmarkId()));
       //      getBookmarkText(bookmarkId);
     }
@@ -95,13 +96,17 @@ public class Main {
         UpdateReadProgressRequest.builder().bookmarkId(BOOKMARK_ID).progress(0.0).build());
   }
 
-  protected void storyText() throws Exception {
-    String fullText = instapaper.getBookmarkText(BOOKMARK_ID);
-    String filteredText = Jsoup.parse(fullText).text();
+  private void superLongStory() throws Exception {
+    String filteredText = Jsoup.parse(storyText(BOOKMARK_ID)).text();
+    System.out.printf("Super long article character length: %d%n", filteredText.length());
     List<String> pages = ArticleTextPaginator.paginateText(filteredText, 800);
     //    log.info(pages.stream().collect(Collectors.joining("\n")));
 
     log.info(StringEscapeUtils.escapeXml11(pages.get(3)));
+  }
+
+  protected String storyText(final int bookmarkId) throws Exception {
+    return instapaper.getBookmarkText(bookmarkId);
   }
 
   private void bookmarkParsing() throws Exception {
@@ -113,22 +118,16 @@ public class Main {
     }
   }
 
-  private void getBookmarks() throws Exception {
+  private List<Bookmark> getBookmarks() throws Exception {
     List<BookmarkId> haveBookmarks = new LinkedList<>();
     haveBookmarks.add(BookmarkId.builder().id(DELETED_ID).build());
     BookmarksListRequest request =
-        BookmarksListRequest.builder().have(Optional.of(haveBookmarks)).build();
+        BookmarksListRequest.builder()
+            .limit(Optional.of(200))
+            .have(Optional.of(haveBookmarks))
+            .build();
     BookmarksListResponse response = instapaper.getBookmarks(request);
-    //    log.info(response);
-    //    request =
-    //        BookmarksListRequest.builder()
-    //            .have(
-    //                Optional.of(response.getBookmarks().subList(0, response.getBookmarks().size()
-    // - 2)))
-    //            .build();
-    //    response = instapaperService.getBookmarks(authToken, request);
-    log.info(response.getBookmarks().stream().findFirst().toString());
-    log.info(response.getDeletedIds().toString());
+    return response.getBookmarks();
   }
 
   private void archive() throws Exception {
