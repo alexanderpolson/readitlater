@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
-import org.jsoup.Jsoup;
 
 @Slf4j
 public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterIntentHandler {
@@ -46,21 +45,22 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
     if (!currentArtcile.isPresent()) {
       throw new IllegalStateException("There are currently no articles available.");
     }
-    Optional<String> executedActionPrompt = executeRequestedAction(session);
+    final Optional<String> executedActionPrompt = executeRequestedAction(session);
     session.pullNextArticle();
-    Optional<String> nextStoryPrompt = getNextStoryPrompt(session);
-
-    String speechText =
-        nextStoryPrompt
+    final String nextStoryPrompt =
+        getNextStoryPrompt(session)
             .map((text) -> concatenatePrompts(executedActionPrompt, Optional.of(text)))
             .orElse(concatenatePrompts(executedActionPrompt, Optional.of(NO_ARTICLES)));
-    final String cardText = StringEscapeUtils.unescapeXml(speechText);
+    final String speechText = StringEscapeUtils.escapeXml11(nextStoryPrompt);
+    final String cardText = StringEscapeUtils.unescapeXml(nextStoryPrompt);
+    log.info("Speech text: {}", speechText);
+    log.info("Card text: {}", cardText);
     return input
         .getResponseBuilder()
         .withSpeech(speechText)
-        .withSimpleCard(DEFAULT_CARD_TITLE, speechText)
-        .withReprompt(cardText)
-        .withShouldEndSession(!nextStoryPrompt.isPresent())
+        .withSimpleCard(DEFAULT_CARD_TITLE, cardText)
+        .withReprompt(speechText)
+        .withShouldEndSession(!session.hasArticle())
         .build();
   }
 
@@ -80,10 +80,8 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
                   String.format(
                       "%s %d %s",
                       pagesLeft == 1 ? "is" : "are", pagesLeft, pagesLeft == 1 ? "page" : "pages");
-              String title =
-                  StringEscapeUtils.escapeXml11(
-                      Jsoup.parse(article.getBookmark().getTitle()).text());
-              return String.format(PROMPT_FORMAT, title, pagesLeftDescription);
+              return String.format(
+                  PROMPT_FORMAT, article.getBookmark().getTitle(), pagesLeftDescription);
             });
   }
 
