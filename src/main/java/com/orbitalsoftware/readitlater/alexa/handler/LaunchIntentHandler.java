@@ -19,12 +19,16 @@ public class LaunchIntentHandler implements RequestHandler {
   public boolean canHandle(HandlerInput handlerInput) {
     return handlerInput.matches(
         Predicates.requestType(LaunchRequest.class)
-            .or(Predicates.intentName("AMAZON.ResumeIntent")));
+            .or(Predicates.intentName("AMAZON.ResumeIntent"))
+            .or(Predicates.intentName("AMAZON.StartOverIntent")));
   }
 
   @Override
   public Optional<Response> handle(HandlerInput handlerInput) {
     log.info("Starting playback...");
+    // Get next article to play back.
+    // * ArticleMetadtaa (title, site, author, etc)
+    // * Next audio link.
     return handlerInput
         .getResponseBuilder()
         .withSpeech("This is a test track.")
