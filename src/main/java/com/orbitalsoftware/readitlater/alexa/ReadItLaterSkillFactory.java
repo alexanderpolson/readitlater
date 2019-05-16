@@ -8,19 +8,16 @@ import com.orbitalsoftware.oauth.OAuthCredentialsProvider;
 import com.orbitalsoftware.readitlater.alexa.clients.InstapaperServiceWithRetryStrategies;
 import com.orbitalsoftware.readitlater.alexa.handler.AudioPlayerEventHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.CheckAudioInterfaceHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.LaunchIntentHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.LoopOffHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.LoopOnHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.NextPlaybackHandler;
-import com.orbitalsoftware.readitlater.alexa.handler.NoHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.PausePlaybackHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.PreviousPlaybackHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.ShuffleOffHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.ShuffleOnHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.StartOverHandler;
-import com.orbitalsoftware.readitlater.alexa.handler.StartPlaybackHandler;
-import com.orbitalsoftware.readitlater.alexa.handler.YesHandler;
 import com.orbitalsoftware.readitlater.alexa.intent.HelpIntentHandler;
-import com.orbitalsoftware.readitlater.alexa.intent.LaunchIntentHandler;
 import java.io.InputStream;
 
 public class ReadItLaterSkillFactory {
@@ -43,12 +40,8 @@ public class ReadItLaterSkillFactory {
         .withAutoCreateTable(true)
         .addExceptionHandler(new ReadItLaterExceptionHandler())
         .addRequestHandlers(
+            new LaunchIntentHandler(),
             new CheckAudioInterfaceHandler(),
-            new LaunchIntentHandler(instapaper),
-            new HelpIntentHandler(),
-            new YesHandler(),
-            new NoHandler(),
-            new StartPlaybackHandler(),
             new NextPlaybackHandler(),
             new PreviousPlaybackHandler(),
             new PausePlaybackHandler(),
@@ -57,9 +50,11 @@ public class ReadItLaterSkillFactory {
             new ShuffleOnHandler(),
             new ShuffleOffHandler(),
             new StartOverHandler(),
-            new AudioPlayerEventHandler())
+            new AudioPlayerEventHandler(),
+            new HelpIntentHandler())
         .build();
 
+    //    new LaunchIntentHandler(instapaper),
     //            new ArchiveArticleIntentHandler(instapaper),
     //            new DeleteArticleIntentHandler(instapaper),
     //            new SkipArticleIntentHandler(instapaper),
