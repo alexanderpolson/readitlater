@@ -2,6 +2,7 @@ package com.orbitalsoftware.readitlater.alexa.handler;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.dispatcher.request.handler.RequestHandler;
+import com.amazon.ask.model.LaunchRequest;
 import com.amazon.ask.model.Response;
 import com.amazon.ask.model.interfaces.audioplayer.PlayBehavior;
 import com.amazon.ask.request.Predicates;
@@ -17,7 +18,8 @@ public class LaunchIntentHandler implements RequestHandler {
   @Override
   public boolean canHandle(HandlerInput handlerInput) {
     return handlerInput.matches(
-        Predicates.intentName("LaunchIntent").or(Predicates.intentName("AMAZON.ResumeIntent")));
+        Predicates.requestType(LaunchRequest.class)
+            .or(Predicates.intentName("AMAZON.ResumeIntent")));
   }
 
   @Override

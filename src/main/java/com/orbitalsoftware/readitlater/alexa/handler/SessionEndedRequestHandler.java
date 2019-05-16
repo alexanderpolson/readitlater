@@ -7,17 +7,15 @@ import java.util.Optional;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
-public class AudioPlayerEventHandler implements RequestHandler {
+public class SessionEndedRequestHandler implements RequestHandler {
 
   @Override
   public boolean canHandle(HandlerInput handlerInput) {
-    return handlerInput.getRequest().getType().startsWith("AudioPlayer.");
+    return handlerInput.getRequest().getType().equals("SessionEndedRequest");
   }
 
   @Override
   public Optional<Response> handle(HandlerInput handlerInput) {
-    final String eventName = handlerInput.getRequest().getType().split(".")[1];
-    log.info("Event: {}", eventName);
     return handlerInput.getResponseBuilder().build();
   }
 }

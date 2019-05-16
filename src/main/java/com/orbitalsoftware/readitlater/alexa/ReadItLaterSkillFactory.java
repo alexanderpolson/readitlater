@@ -9,6 +9,7 @@ import com.orbitalsoftware.readitlater.alexa.clients.InstapaperServiceWithRetryS
 import com.orbitalsoftware.readitlater.alexa.handler.AudioPlayerEventHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.CheckAudioInterfaceHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.LaunchIntentHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.LoggingRequestHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.LoopOffHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.LoopOnHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.NextPlaybackHandler;
@@ -40,6 +41,7 @@ public class ReadItLaterSkillFactory {
         .withAutoCreateTable(true)
         .addExceptionHandler(new ReadItLaterExceptionHandler())
         .addRequestHandlers(
+            new LoggingRequestHandler(),
             new LaunchIntentHandler(),
             new CheckAudioInterfaceHandler(),
             new NextPlaybackHandler(),
@@ -51,7 +53,8 @@ public class ReadItLaterSkillFactory {
             new ShuffleOffHandler(),
             new StartOverHandler(),
             new AudioPlayerEventHandler(),
-            new HelpIntentHandler())
+            new HelpIntentHandler(),
+            new SessionEndedRequestHandler())
         .build();
 
     //    new LaunchIntentHandler(instapaper),
