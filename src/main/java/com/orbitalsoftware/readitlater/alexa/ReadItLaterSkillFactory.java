@@ -6,15 +6,21 @@ import com.orbitalsoftware.instapaper.Instapaper;
 import com.orbitalsoftware.instapaper.auth.PropertiesInstapaperAuthTokenProvider;
 import com.orbitalsoftware.oauth.OAuthCredentialsProvider;
 import com.orbitalsoftware.readitlater.alexa.clients.InstapaperServiceWithRetryStrategies;
-import com.orbitalsoftware.readitlater.alexa.intent.ArchiveArticleIntentHandler;
-import com.orbitalsoftware.readitlater.alexa.intent.CancelAndStopIntentHandler;
-import com.orbitalsoftware.readitlater.alexa.intent.DeleteArticleIntentHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.AudioPlayerEventHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.CheckAudioInterfaceHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.LoopOffHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.LoopOnHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.NextPlaybackHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.NoHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.PausePlaybackHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.PreviousPlaybackHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.ShuffleOffHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.ShuffleOnHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.StartOverHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.StartPlaybackHandler;
+import com.orbitalsoftware.readitlater.alexa.handler.YesHandler;
 import com.orbitalsoftware.readitlater.alexa.intent.HelpIntentHandler;
 import com.orbitalsoftware.readitlater.alexa.intent.LaunchIntentHandler;
-import com.orbitalsoftware.readitlater.alexa.intent.NextPageIntentHandler;
-import com.orbitalsoftware.readitlater.alexa.intent.ReadArticleIntentHandler;
-import com.orbitalsoftware.readitlater.alexa.intent.SkipArticleIntentHandler;
-import com.orbitalsoftware.readitlater.alexa.intent.StarArticleIntentHandler;
 import java.io.InputStream;
 
 public class ReadItLaterSkillFactory {
@@ -37,16 +43,32 @@ public class ReadItLaterSkillFactory {
         .withAutoCreateTable(true)
         .addExceptionHandler(new ReadItLaterExceptionHandler())
         .addRequestHandlers(
+            new CheckAudioInterfaceHandler(),
             new LaunchIntentHandler(instapaper),
-            new ArchiveArticleIntentHandler(instapaper),
-            new DeleteArticleIntentHandler(instapaper),
-            new SkipArticleIntentHandler(instapaper),
-            new StarArticleIntentHandler(instapaper),
-            new NextPageIntentHandler(instapaper),
-            new ReadArticleIntentHandler(instapaper),
-            new CancelAndStopIntentHandler(),
             new HelpIntentHandler(),
-            new SessionEndedRequestHandler())
+            new YesHandler(),
+            new NoHandler(),
+            new StartPlaybackHandler(),
+            new NextPlaybackHandler(),
+            new PreviousPlaybackHandler(),
+            new PausePlaybackHandler(),
+            new LoopOnHandler(),
+            new LoopOffHandler(),
+            new ShuffleOnHandler(),
+            new ShuffleOffHandler(),
+            new StartOverHandler(),
+            new AudioPlayerEventHandler())
         .build();
+
+    //            new ArchiveArticleIntentHandler(instapaper),
+    //            new DeleteArticleIntentHandler(instapaper),
+    //            new SkipArticleIntentHandler(instapaper),
+    //            new StarArticleIntentHandler(instapaper),
+    //            new NextPageIntentHandler(instapaper),
+    //            new ReadArticleIntentHandler(instapaper),
+    //            new CancelAndStopIntentHandler(),
+    //            new HelpIntentHandler(),
+    //            new SessionEndedRequestHandler())
+    //        .build();
   }
 }
