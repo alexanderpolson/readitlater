@@ -41,8 +41,8 @@ public abstract class GetNextArticleIntentHandler extends AbstractReadItLaterInt
   @Timed
   @Override
   Optional<Response> handle(HandlerInput input, ReadItLaterSession session) throws Exception {
-    Optional<Article> currentArtcile = session.getCurrentArticle();
-    if (!currentArtcile.isPresent()) {
+    Optional<Article> currentArticle = session.getCurrentArticle();
+    if (!currentArticle.isPresent()) {
       throw new IllegalStateException("There are currently no articles available.");
     }
     final Optional<String> executedActionPrompt = executeRequestedAction(session);
