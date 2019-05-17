@@ -19,8 +19,8 @@ public class ArticleTextPaginator {
 
     int beginIndex = 0;
     do {
-      int endIndex = beginIndex + CHARACTER_LIMIT;
-      if (fullArticleText.length() - endIndex < CHARACTER_LIMIT / 2) {
+      int endIndex = beginIndex + characterLimit;
+      if (fullArticleText.length() - endIndex < characterLimit / 2) {
         endIndex = fullArticleText.length();
       } else {
         int attemptEndIndex =
@@ -47,5 +47,9 @@ public class ArticleTextPaginator {
     // TODO: Remove surrounding whitespace.
 
     return pages;
+  }
+
+  public static List<String> paginateText(@NonNull String fullArticleText) {
+    return paginateText(fullArticleText, CHARACTER_LIMIT);
   }
 }
