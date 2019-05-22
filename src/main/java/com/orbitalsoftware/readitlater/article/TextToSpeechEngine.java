@@ -10,5 +10,5 @@ public interface TextToSpeechEngine {
    * @param text the text to turn into speech.
    * @return the {@link URL} that links to the generated speech.
    */
-  URL textToSpeech(String text);
+  URL textToSpeech(String prefix, String text);
 }

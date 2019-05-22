@@ -4,7 +4,6 @@ import com.amazon.ask.attributes.AttributesManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.orbitalsoftware.harvest.annotations.Timed;
 import com.orbitalsoftware.readitlater.article.ArticlePageAudio;
 import com.orbitalsoftware.readitlater.article.exception.ReadItLaterFatalException;
 import java.io.IOException;
@@ -43,41 +42,31 @@ public class Session {
         this.articlesToSkip =
             mapper.readValue(rawCustomerState, new TypeReference<List<Integer>>() {});
         log.info("Loaded articles to skip: {}", this.articlesToSkip);
+
+        String rawCurrentArticlePageAudio =
+            (String) persistedAttributes.get(KEY_CURRENT_ARTICLE_PAGE);
+
+        if (rawCurrentArticlePageAudio != null) {
+          currentArticlePageAudio =
+              Optional.ofNullable(
+                  mapper.readValue((String) rawCurrentArticlePageAudio, ArticlePageAudio.class));
+          log.info("Loaded current article page audio: {}", currentArticlePageAudio);
+        }
       } catch (IOException e) {
         log.error("Exception while trying to load articles to skip.", e);
       }
     }
-
-    currentArticlePageAudio = deserializeSessionState();
   }
 
   public void setCurrentArticlePageAudio(
       @NonNull Optional<ArticlePageAudio> currentArticlePageAudio) {
     log.info("Current article page set to: {}", currentArticlePageAudio);
     this.currentArticlePageAudio = currentArticlePageAudio;
-    saveSessionState();
+    savePersistedState();
   }
 
   public void clearCurrentArticlePage() {
     setCurrentArticlePageAudio(Optional.empty());
-  }
-
-  @Timed
-  private Optional<ArticlePageAudio> deserializeSessionState() {
-    try {
-      Map<String, Object> sessionAttributes =
-          Optional.ofNullable(attributesManager.getSessionAttributes()).orElse(new HashMap<>());
-      String articlePageJson = (String) sessionAttributes.get(KEY_CURRENT_ARTICLE_PAGE);
-      if (articlePageJson != null) {
-        return Optional.ofNullable(
-            mapper.readValue((String) articlePageJson, ArticlePageAudio.class));
-      } else {
-        return Optional.empty();
-      }
-    } catch (final IOException e) {
-      throw new ReadItLaterFatalException(
-          "An exception occurred when attempting to deserialize session state.", e);
-    }
   }
 
   public final List<Integer> getArticlesToSkip() {
@@ -114,29 +103,20 @@ public class Session {
     }
   }
 
-  @Timed
   private void savePersistedState() {
     try {
       Map<String, Object> persistedAttributes = new HashMap<>();
       persistedAttributes.put(KEY_ARTICLES_TO_SKIP, mapper.writeValueAsString(articlesToSkip));
+
+      // TODO: What does this do if the article page is empty?
+      String articlePageJson = mapper.writeValueAsString(getCurrentArticlePageAudio());
+      persistedAttributes.put(KEY_CURRENT_ARTICLE_PAGE, articlePageJson);
+      log.info("Writing article JSON to session: {}", articlePageJson);
       attributesManager.setPersistentAttributes(persistedAttributes);
       attributesManager.savePersistentAttributes();
     } catch (IOException e) {
       throw new ReadItLaterFatalException(
           "An exception occurred while trying to save persisted state.", e);
-    }
-  }
-
-  @Timed
-  private void saveSessionState() {
-    try {
-      // TODO: What does this do if the article page is empty?
-      String articlePageJson = mapper.writeValueAsString(getCurrentArticlePageAudio());
-      log.info("Writing article JSON to session: {}", articlePageJson);
-      attributesManager.getSessionAttributes().put(KEY_CURRENT_ARTICLE_PAGE, articlePageJson);
-    } catch (IOException e) {
-      throw new ReadItLaterFatalException(
-          "An exception occurred while trying to save session state.", e);
     }
   }
 }

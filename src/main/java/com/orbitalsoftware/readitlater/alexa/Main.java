@@ -40,10 +40,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
@@ -106,11 +108,20 @@ public class Main {
 
     // Synchronously ask Amazon Polly to describe available TTS voices.
     DescribeVoicesResult describeVoicesResult = polly.describeVoices(describeVoicesRequest);
-    voice =
+
+    List<Voice> voices =
         describeVoicesResult.getVoices().stream()
-            .filter((v) -> v.getName().equals("Salli"))
-            .findFirst()
-            .get();
+            .filter((v) -> v.getLanguageCode().equals("en-US"))
+            .sorted(Comparator.comparing(Voice::getName))
+            .collect(Collectors.toList());
+
+    // Log all the voices.
+    System.err.printf(
+        "There were %d voices returned, with next token %s.%n",
+        voices.size(), describeVoicesResult.getNextToken());
+    voices.forEach((v) -> System.out.printf("%s - %s%n", v.getName(), v.getId()));
+
+    voice = voices.stream().filter((v) -> v.getName().equals("Salli")).findFirst().get();
     System.err.printf("Using voice \"%s\" for synthesizing.%n", voice.getName());
   }
 

@@ -1,19 +1,28 @@
 package com.orbitalsoftware.readitlater.alexa.handler;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
-import com.amazon.ask.dispatcher.request.handler.RequestHandler;
-import com.amazon.ask.model.Response;
+import com.amazon.ask.model.interfaces.playbackcontroller.PreviousCommandIssuedRequest;
+import com.amazon.ask.request.Predicates;
+import com.orbitalsoftware.readitlater.alexa.Session;
+import com.orbitalsoftware.readitlater.article.ArticleMetadataAudio;
+import com.orbitalsoftware.readitlater.article.ReadItLater;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
 
-public class PreviousPlaybackHandler implements RequestHandler {
+@AllArgsConstructor
+public class PreviousPlaybackHandler extends PlaybackRequestHandler {
+
+  private final ReadItLater readItLater;
 
   @Override
   public boolean canHandle(HandlerInput handlerInput) {
-    return false;
+    return handlerInput.matches(
+        Predicates.intentName("AMAZON.PreviousIntent")
+            .or(Predicates.requestType(PreviousCommandIssuedRequest.class)));
   }
 
   @Override
-  public Optional<Response> handle(HandlerInput handlerInput) {
-    return Optional.empty();
+  protected Optional<ArticleMetadataAudio> articleMetadataAudio(Session session) {
+    return readItLater.previousArticle(session);
   }
 }

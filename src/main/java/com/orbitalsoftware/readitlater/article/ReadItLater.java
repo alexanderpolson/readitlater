@@ -11,6 +11,20 @@ import java.util.Optional;
 public interface ReadItLater {
 
   /**
+   * Gets the metadata and title audio for the article that is at the top of the customer's article
+   * queue. This * disregards skipped articles, as well as those that are not supported on the
+   * current device such as videos on a headless device.
+   *
+   * <p>NOTE: Called on launch request.
+   *
+   * @param session
+   * @return
+   * @throws ReadItLaterException
+   */
+  Optional<ArticleMetadataAudio> getCurrentArticleTitle(Session session)
+      throws ReadItLaterException;
+
+  /**
    * Gets the current page of the article that is at the top of the customer's article queue. This
    * disregards skipped articles, as well as those that are not supported on the current device such
    * as videos on a headless device.
@@ -34,13 +48,23 @@ public interface ReadItLater {
   Optional<ArticlePageAudio> advanceToNextArticlePage(Session session) throws ReadItLaterException;
 
   /**
+   * Starts the current article over.
+   *
+   * @param session
+   * @return
+   * @throws ReadItLaterException
+   */
+  Optional<ArticleMetadataAudio> startCurrentArticleOver(Session session)
+      throws ReadItLaterException;
+
+  /**
    * Skips the current article and moves to the next article's first page.
    *
    * <p>NOTE: Called on skip.
    *
    * @return the next page for the customer to listen to.
    */
-  Optional<ArticlePageAudio> skipToNextArticle(Session session) throws ReadItLaterException;
+  Optional<ArticleMetadataAudio> skipToNextArticle(Session session) throws ReadItLaterException;
 
   /**
    * Moves back to the previously skipped article, if one exists.
@@ -50,14 +74,14 @@ public interface ReadItLater {
    * @return the first page of the previous article if one exists. If not, then {@link
    *     Optional#empty()} is returned.
    */
-  Optional<ArticlePageAudio> previousArticle(Session session) throws ReadItLaterException;
+  Optional<ArticleMetadataAudio> previousArticle(Session session) throws ReadItLaterException;
 
   /**
    * Archives the current article and moves to the next article's first page.
    *
    * @return the next page for the customer to listen to.
    */
-  Optional<ArticlePageAudio> archiveAndGetNextArticlePage(Session session)
+  Optional<ArticleMetadataAudio> archiveAndGetNextArticlePage(Session session)
       throws ReadItLaterException;
 
   /**
@@ -65,7 +89,7 @@ public interface ReadItLater {
    *
    * @return the next page for the customer to listen to.
    */
-  Optional<ArticlePageAudio> favoriteAndGetNextArticlePage(Session session)
+  Optional<ArticleMetadataAudio> favoriteAndGetNextArticlePage(Session session)
       throws ReadItLaterException;
 
   /**
@@ -73,6 +97,6 @@ public interface ReadItLater {
    *
    * @return the next page for the customer to listen to.
    */
-  Optional<ArticlePageAudio> deleteAndGetNextArticlePage(Session session)
+  Optional<ArticleMetadataAudio> deleteAndGetNextArticlePage(Session session)
       throws ReadItLaterException;
 }

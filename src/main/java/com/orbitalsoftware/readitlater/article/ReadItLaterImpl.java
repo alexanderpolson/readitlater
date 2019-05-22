@@ -22,6 +22,7 @@ import java.util.Optional;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
+import org.jsoup.Jsoup;
 
 @Log4j2
 @Builder
@@ -29,37 +30,63 @@ public class ReadItLaterImpl implements ReadItLater {
 
   private static final Integer GET_BOOKMARKS_LIMIT = 100;
   private static final int POLLY_CHUNK_SIZE = 1200;
+  private static final String ARTICLE_TITLE_FILE_FORMAT = "%d.title";
+  private static final String ARTICLE_PAGE_FORMAT = "%d.%d";
+  private static final String TITLE_PROMPT_FORMAT = "Up next, %s. Starting now...";
 
   private @NonNull final Instapaper instapaper;
   private @NonNull final TextToSpeechEngine textToSpeechEngine;
 
   @Timed
   @Override
+  public Optional<ArticleMetadataAudio> getCurrentArticleTitle(Session session)
+      throws ReadItLaterException {
+    return getCurrentArticle(session).map((a) -> getArticleMetadataAudio(a.getMetadata()));
+  }
+
+  private ArticleMetadataAudio getArticleMetadataAudio(
+      @NonNull final ArticleMetadata articleMetadata) {
+    final String fileName = String.format(ARTICLE_TITLE_FILE_FORMAT, articleMetadata.getId());
+    return ArticleMetadataAudio.builder()
+        .metadata(articleMetadata)
+        .titleUri(
+            textToSpeechEngine
+                .textToSpeech(
+                    fileName, String.format(TITLE_PROMPT_FORMAT, articleMetadata.getTitle()))
+                .toExternalForm())
+        .build();
+  }
+
+  @Timed
+  @Override
   public Optional<ArticlePageAudio> getCurrentArticlePage(@NonNull final Session session)
       throws ReadItLaterException {
     if (!session.getCurrentArticlePageAudio().isPresent()) {
-      try {
-        BookmarksListResponse response =
-            instapaper.getBookmarks(
-                BookmarksListRequest.builder()
-                    .limit(Optional.of(GET_BOOKMARKS_LIMIT))
-                    .have(Optional.of(BookmarkId.forIds(session.getArticlesToSkip())))
-                    .build());
-        // TODO: Add more detailed filtering.
-
-        Optional<Bookmark> nextBookmark =
-            response.getBookmarks().stream()
-                .filter(bookmark -> !bookmark.getUrl().startsWith("https://www.youtube.com"))
-                .filter(bookmark -> !session.shouldSkipArticle(bookmark.getBookmarkId().getId()))
-                .findFirst();
-        session.setCurrentArticlePageAudio(articlePageAudio(articlePageForBookmark(nextBookmark)));
-      } catch (final Exception e) {
-        // TODO: Need to update Instapaper to throw more specific exceptions.
-        throw new ReadItLaterDependencyException(e);
-      }
+      session.setCurrentArticlePageAudio(articlePageAudio(getCurrentArticle(session)));
     }
 
     return session.getCurrentArticlePageAudio();
+  }
+
+  private Optional<ArticlePage> getCurrentArticle(@NonNull final Session session) {
+    try {
+      BookmarksListResponse response =
+          instapaper.getBookmarks(
+              BookmarksListRequest.builder()
+                  .limit(Optional.of(GET_BOOKMARKS_LIMIT))
+                  .have(Optional.of(BookmarkId.forIds(session.getArticlesToSkip())))
+                  .build());
+      // TODO: Add more detailed filtering.
+
+      return articlePageForBookmark(
+          response.getBookmarks().stream()
+              .filter(bookmark -> !bookmark.getUrl().startsWith("https://www.youtube.com"))
+              .filter(bookmark -> !session.shouldSkipArticle(bookmark.getBookmarkId().getId()))
+              .findFirst());
+    } catch (final Exception e) {
+      // TODO: Need to update Instapaper to throw more specific exceptions.
+      throw new ReadItLaterDependencyException(e);
+    }
   }
 
   private final ArticleMetadata bookmarkToArticleMetaData(final Bookmark bookmark) {
@@ -75,7 +102,7 @@ public class ReadItLaterImpl implements ReadItLater {
       // TODO: Add caching.
       String articleText = instapaper.getBookmarkText(articleMetadata.getId());
       List<String> articlePageTexts =
-          ArticleTextPaginator.paginateText(articleText, POLLY_CHUNK_SIZE);
+          ArticleTextPaginator.paginateText(Jsoup.parse(articleText).text(), POLLY_CHUNK_SIZE);
 
       final List<ArticlePage> articlePages = new ArrayList<>(articlePageTexts.size());
       long startPosition = 0;
@@ -85,6 +112,7 @@ public class ReadItLaterImpl implements ReadItLater {
         endPosition = startPosition + articlePageText.length() - 1;
         final ArticlePage articlePage =
             ArticlePage.builder()
+                .metadata(articleMetadata)
                 .startPosition(startPosition)
                 .endPosition(endPosition)
                 .pageText(articlePageText)
@@ -128,9 +156,11 @@ public class ReadItLaterImpl implements ReadItLater {
       @NonNull final Optional<ArticlePage> articlePage) {
     return articlePage.map(
         (a) -> {
+          final String fileName =
+              String.format(ARTICLE_PAGE_FORMAT, a.getMetadata().getId(), a.getStartPosition());
           return ArticlePageAudio.builder()
               .page(a)
-              .pageUri(textToSpeechEngine.textToSpeech(a.getPageText()).toExternalForm())
+              .pageUri(textToSpeechEngine.textToSpeech(fileName, a.getPageText()).toExternalForm())
               .offset(0)
               .build();
         });
@@ -148,39 +178,60 @@ public class ReadItLaterImpl implements ReadItLater {
       final Optional<ArticlePageAudio> nextArticlePageAudio =
           articlePageAudio(article.nextPage(currentArticlePageAudio.getPage()));
 
-      // Update progress in Instapaper
-      try {
+      if (nextArticlePageAudio.isPresent()) {
         ArticlePage nextArticlePage = nextArticlePageAudio.get().getPage();
-        double progress = nextArticlePage.getStartPosition() / article.length();
-        final UpdateReadProgressRequest updateReadProgressRequest =
-            UpdateReadProgressRequest.builder()
-                .bookmarkId(nextArticlePage.getMetadata().getId())
-                .progress(progress)
-                .build();
-        instapaper.updateReadProgress(updateReadProgressRequest);
-      } catch (Exception e) {
-        log.warn("Failure when updating progress of article to Instapaper.", e);
+        double progress = 1.0 * nextArticlePage.getStartPosition() / article.length();
+        updateCurrentArticleProgress(session, progress);
+        session.setCurrentArticlePageAudio(nextArticlePageAudio);
+      } else {
+        return Optional.empty();
       }
-      session.setCurrentArticlePageAudio(nextArticlePageAudio);
     }
 
-    return getCurrentArticlePage(session);
+    return session.getCurrentArticlePageAudio();
+  }
+
+  @Override
+  public Optional<ArticleMetadataAudio> startCurrentArticleOver(Session session)
+      throws ReadItLaterException {
+    // Reset this article's progress.
+    updateCurrentArticleProgress(session, 0.0);
+    return getCurrentArticleTitle(session);
+  }
+
+  private void updateCurrentArticleProgress(@NonNull final Session session, final double progress) {
+    session
+        .getCurrentArticlePageAudio()
+        .ifPresent(
+            (a) -> {
+              // Update progress in Instapaper
+              try {
+                final UpdateReadProgressRequest updateReadProgressRequest =
+                    UpdateReadProgressRequest.builder()
+                        .bookmarkId(a.getPage().getMetadata().getId())
+                        .progress(progress)
+                        .build();
+                instapaper.updateReadProgress(updateReadProgressRequest);
+              } catch (Exception e) {
+                log.warn("Failure when updating progress of article to Instapaper.", e);
+              }
+            });
   }
 
   @Timed
   @Override
-  public Optional<ArticlePageAudio> skipToNextArticle(@NonNull final Session session)
+  public Optional<ArticleMetadataAudio> skipToNextArticle(@NonNull final Session session)
       throws ReadItLaterException {
     session.skipCurrentArticle();
-    return getCurrentArticlePage(session);
+    return getCurrentArticleTitle(session);
   }
 
   @Timed
   @Override
-  public Optional<ArticlePageAudio> previousArticle(@NonNull final Session session)
+  public Optional<ArticleMetadataAudio> previousArticle(@NonNull final Session session)
       throws ReadItLaterException {
     if (session.previousArticle()) {
-      return getCurrentArticlePage(session);
+      return getCurrentArticleTitle(session);
     } else {
       return Optional.empty();
     }
@@ -188,9 +239,10 @@ public class ReadItLaterImpl implements ReadItLater {
 
   @Timed
   @Override
-  public Optional<ArticlePageAudio> archiveAndGetNextArticlePage(@NonNull final Session session)
+  public Optional<ArticleMetadataAudio> archiveAndGetNextArticlePage(@NonNull final Session session)
       throws ReadItLaterException {
     if (session.getCurrentArticlePageAudio().isPresent()) {
+      log.info("Attempting to archive: {}", session.getCurrentArticlePageAudio().get());
       try {
         final ArticleMetadata articleMetadata =
             session.getCurrentArticlePageAudio().get().getPage().getMetadata();
@@ -206,15 +258,17 @@ public class ReadItLaterImpl implements ReadItLater {
         // TODO: Figure out how to handle this better.
         session.skipCurrentArticle();
       }
+    } else {
+      log.info("Tried to archive without current article set.");
     }
 
-    return getCurrentArticlePage(session);
+    return getCurrentArticleTitle(session);
   }
 
   @Timed
   @Override
-  public Optional<ArticlePageAudio> favoriteAndGetNextArticlePage(@NonNull final Session session)
-      throws ReadItLaterException {
+  public Optional<ArticleMetadataAudio> favoriteAndGetNextArticlePage(
+      @NonNull final Session session) throws ReadItLaterException {
     if (session.getCurrentArticlePageAudio().isPresent()) {
       try {
         final ArticleMetadata articleMetadata =
@@ -234,7 +288,7 @@ public class ReadItLaterImpl implements ReadItLater {
 
   @Timed
   @Override
-  public Optional<ArticlePageAudio> deleteAndGetNextArticlePage(@NonNull final Session session)
+  public Optional<ArticleMetadataAudio> deleteAndGetNextArticlePage(@NonNull final Session session)
       throws ReadItLaterException {
     if (session.getCurrentArticlePageAudio().isPresent()) {
       try {
@@ -252,6 +306,6 @@ public class ReadItLaterImpl implements ReadItLater {
       }
     }
 
-    return getCurrentArticlePage(session);
+    return getCurrentArticleTitle(session);
   }
 }

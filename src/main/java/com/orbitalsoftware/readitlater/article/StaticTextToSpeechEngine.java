@@ -9,7 +9,7 @@ public class StaticTextToSpeechEngine implements TextToSpeechEngine {
       "https://s3.amazonaws.com/orbitalsoftware.com.pollytest/test_static_speech.mp3";
 
   @Override
-  public URL textToSpeech(String text) {
+  public URL textToSpeech(String prefix, String text) {
     try {
       return new URL(STATIC_SPEECH_URL);
     } catch (MalformedURLException e) {
