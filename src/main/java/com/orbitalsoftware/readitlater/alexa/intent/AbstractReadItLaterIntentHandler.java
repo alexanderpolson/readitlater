@@ -32,7 +32,8 @@ public abstract class AbstractReadItLaterIntentHandler implements RequestHandler
     } catch (Exception e) {
       // Wrap whatever exception was received in a RuntimeException and let the ExceptionHandler
       // deal with it.
-      // TODO: Create simple RuntimeException-based exception model for the skill so this try/catch
+      // TODO: Create simple RuntimeException-based exception com.orbitalsoftware.tumblr.model for
+      // the skill so this try/catch
       // isn't necessary.
       throw new RuntimeException(e);
     }

@@ -11,9 +11,8 @@ import com.orbitalsoftware.instapaper.InstapaperService;
 import com.orbitalsoftware.instapaper.StarBookmarkRequest;
 import com.orbitalsoftware.instapaper.StarBookmarkResponse;
 import com.orbitalsoftware.instapaper.UpdateReadProgressRequest;
-import com.orbitalsoftware.instapaper.auth.InstapaperAuthTokenProvider;
-import com.orbitalsoftware.oauth.AuthToken;
-import com.orbitalsoftware.oauth.OAuthCredentialsProvider;
+import com.orbitalsoftware.oauth.OAuthToken;
+import com.orbitalsoftware.oauth.OAuthTokenProvider;
 import com.orbitalsoftware.retry.RetryStrategy;
 import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
@@ -32,10 +31,10 @@ public class InstapaperServiceWithRetryStrategies extends InstapaperService {
   private final RetryStrategy updateReadProgressRetryStrategy;
 
   public InstapaperServiceWithRetryStrategies(
-      @NonNull OAuthCredentialsProvider oAuthCredentialsProvider,
-      @NonNull InstapaperAuthTokenProvider authTokenProvider)
+      @NonNull OAuthTokenProvider oAuthTokenProvider,
+      @NonNull OAuthTokenProvider accessTokenProvider)
       throws Exception {
-    super(oAuthCredentialsProvider, authTokenProvider);
+    super(oAuthTokenProvider, accessTokenProvider);
 
     defaultRetryStrategy =
         RetryStrategy.builder()
@@ -81,8 +80,8 @@ public class InstapaperServiceWithRetryStrategies extends InstapaperService {
   }
 
   @Override
-  public AuthToken getAuthToken(String username, String password) throws Exception {
-    return defaultRetryStrategy.execute(() -> super.getAuthToken(username, password));
+  public OAuthToken getAccessToken(String username, String password) throws Exception {
+    return defaultRetryStrategy.execute(() -> super.getAccessToken(username, password));
   }
 
   @Override

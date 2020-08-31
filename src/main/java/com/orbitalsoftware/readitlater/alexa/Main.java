@@ -28,10 +28,9 @@ import com.orbitalsoftware.instapaper.Instapaper;
 import com.orbitalsoftware.instapaper.InstapaperService;
 import com.orbitalsoftware.instapaper.UnarchiveBookmarkRequest;
 import com.orbitalsoftware.instapaper.UpdateReadProgressRequest;
-import com.orbitalsoftware.instapaper.auth.InstapaperAuthTokenProvider;
-import com.orbitalsoftware.instapaper.auth.PropertiesInstapaperAuthTokenProvider;
-import com.orbitalsoftware.oauth.OAuthCredentialsProvider;
-import com.orbitalsoftware.oauth.PropertiesOAuthCredentialsProvider;
+import com.orbitalsoftware.oauth.OAuthToken;
+import com.orbitalsoftware.oauth.OAuthTokenProvider;
+import com.orbitalsoftware.oauth.PropertiesOAuthTokenProvider;
 import com.orbitalsoftware.readitlater.alexa.article.ArticleTextPaginator;
 import java.io.File;
 import java.io.FileInputStream;
@@ -74,12 +73,25 @@ public class Main {
 
   public Main() throws Exception {
 
-    OAuthCredentialsProvider oAuthCredentialsProvider =
-        new PropertiesOAuthCredentialsProvider(
-            new FileInputStream(O_AUTH_CREDENTIALS_PROPERTIES_PATH));
-    InstapaperAuthTokenProvider authTokenProvider =
-        new PropertiesInstapaperAuthTokenProvider(new FileInputStream(AUTH_TOKEN_PROPERTIES_PATH));
-    instapaper = new InstapaperService(oAuthCredentialsProvider, authTokenProvider);
+    OAuthTokenProvider consumerKeyProvider =
+        new PropertiesOAuthTokenProvider(new FileInputStream(O_AUTH_CREDENTIALS_PROPERTIES_PATH));
+    OAuthTokenProvider accessKeyProvider =
+        new PropertiesOAuthTokenProvider(new FileInputStream(AUTH_TOKEN_PROPERTIES_PATH));
+    System.err.printf(
+        "oAuthCredentials: %s %s%n",
+        consumerKeyProvider.getToken().getTokenKey(),
+        consumerKeyProvider.getToken().getTokenSecret());
+    //    final AccessToken accessToken = authTokenProvider.getAccessToken();
+    //    System.err.printf(
+    //        "Instapaper Credentials: %s: %s%n", accessToken.getToken(),
+    // accessToken.getTokenSecret());
+    instapaper = new InstapaperService(consumerKeyProvider, accessKeyProvider);
+    final OAuthToken accessToken =
+        instapaper.getAccessToken("alex@alexpolson.com", "uiwVxeAEq7gAi3fN");
+    System.out.println(accessToken);
+    //    VerifyCredentialsResponse response = instapaper.verifyCredentials();
+    //    System.err.println(response);
+    System.exit(0);
     final AWSCredentialsProvider credentialsProvider =
         new AWSCredentialsProvider() {
           @Override

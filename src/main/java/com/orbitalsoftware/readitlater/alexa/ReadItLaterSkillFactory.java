@@ -7,8 +7,8 @@ import com.amazonaws.services.polly.AmazonPollyClient;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.orbitalsoftware.instapaper.Instapaper;
-import com.orbitalsoftware.instapaper.auth.PropertiesInstapaperAuthTokenProvider;
-import com.orbitalsoftware.oauth.OAuthCredentialsProvider;
+import com.orbitalsoftware.oauth.OAuthTokenProvider;
+import com.orbitalsoftware.oauth.PropertiesOAuthTokenProvider;
 import com.orbitalsoftware.readitlater.alexa.clients.InstapaperServiceWithRetryStrategies;
 import com.orbitalsoftware.readitlater.alexa.handler.AudioPlayerEventHandler;
 import com.orbitalsoftware.readitlater.alexa.handler.ExceptionEncounteredHandler;
@@ -30,16 +30,14 @@ public class ReadItLaterSkillFactory {
   private static final String STATE_TABLE_NAME = "ReadItLaterState";
   private static final String AUTH_TOKEN_RESOURCE = "instapaper_auth.token";
 
-  public static Skill createInstance(final OAuthCredentialsProvider credentialsProvider)
+  public static Skill createInstance(final OAuthTokenProvider credentialsProvider)
       throws Exception {
     // TODO: Instantiate these via Spring.
     InputStream inputStream =
-        PropertiesInstapaperAuthTokenProvider.class
-            .getClassLoader()
-            .getResourceAsStream(AUTH_TOKEN_RESOURCE);
+        ReadItLaterSkillFactory.class.getClassLoader().getResourceAsStream(AUTH_TOKEN_RESOURCE);
     Instapaper instapaper =
         new InstapaperServiceWithRetryStrategies(
-            credentialsProvider, new PropertiesInstapaperAuthTokenProvider(inputStream));
+            credentialsProvider, new PropertiesOAuthTokenProvider(inputStream));
 
     // Not sure if we need to specify credentials here given Lambda's execution role?
     final AmazonPolly amazonPolly = AmazonPollyClient.builder().build();

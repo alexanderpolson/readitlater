@@ -29,7 +29,8 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.6.0</version>
         <configuration>
-          <mainClass>com.orbitalsoftware.readitlater.alexa.Main</mainClass>
+          <mainClass>com.orbitalsoftware.readitlater.alexa.com.orbitalsoftware.tumblr.Main
+          </mainClass>
         </configuration>
       </plugin>
     </plugins>
